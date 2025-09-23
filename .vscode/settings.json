@@ -1,0 +1,8 @@
+{
+    "java.project.referencedLibraries": [
+        "${workspaceFolder}/lib/**/*.jar",
+        "C:/javafx-sdk-21.0.8/lib/*.jar",
+        "C:/H2/bin/h2-2.3.232.jar"
+    ]
+}
+

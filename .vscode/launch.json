@@ -1,0 +1,32 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "FoundationsMain",
+            "request": "launch",
+            "mainClass": "FoundationsF25/applicationMain.FoundationsMain",
+            "projectName": "HW1"
+        },
+        {
+            "type": "java",
+            "name": "Current File",
+            "request": "launch",
+            "mainClass": "${file}"
+        },
+        {
+            "type": "java",
+            "name": "Run FoundationsMain (JavaFX)",
+            "request": "launch",
+            "mainClass": "applicationMain.FoundationsMain",
+            "projectName": "HW1",
+            "vmArgs": "--module-path \"C:\\javafx-sdk-21.0.8\\lib\" --add-modules javafx.controls,javafx.graphics,javafx.fxml",
+            "classPaths": [
+                "C:\\H2\\bin\\h2-2.3.232.jar"
+            ]
+        }
+    ]
+}
