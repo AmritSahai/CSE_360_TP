@@ -105,11 +105,66 @@ public class ControllerAdminHome {
 	 * this function has not yet been implemented. </p>
 	 */
 	protected static void setOnetimePassword () {
-		System.out.println("\n*** WARNING ***: One-Time Password Not Yet Implemented");
-		ViewAdminHome.alertNotImplemented.setTitle("*** WARNING ***");
-		ViewAdminHome.alertNotImplemented.setHeaderText("One-Time Password Issue");
-		ViewAdminHome.alertNotImplemented.setContentText("One-Time Password Not Yet Implemented");
-		ViewAdminHome.alertNotImplemented.showAndWait();
+		java.util.List<String> users = theDatabase.getUserList();
+        if (users == null || users.size() <= 1) {
+            ViewAdminHome.alertNotImplemented.setTitle("One-Time Password");
+            ViewAdminHome.alertNotImplemented.setHeaderText("No Users Found");
+            ViewAdminHome.alertNotImplemented.setContentText("There are no users to set a one-time password for.");
+            ViewAdminHome.alertNotImplemented.showAndWait();
+            return;
+        }
+
+        // Remove placeholder and the current admin
+        users = new java.util.ArrayList<String>(users);
+        if (users.get(0).compareTo("<Select a User>") == 0) users.remove(0);
+        String loggedInUser = guiAdminHome.ViewAdminHome.theUser.getUserName();
+        users.remove(loggedInUser);
+        if (users.isEmpty()) {
+            ViewAdminHome.alertNotImplemented.setTitle("One-Time Password");
+            ViewAdminHome.alertNotImplemented.setHeaderText("No Eligible Users");
+            ViewAdminHome.alertNotImplemented.setContentText("You cannot set a one-time password for yourself.");
+            ViewAdminHome.alertNotImplemented.showAndWait();
+            return;
+        }
+
+        javafx.scene.control.ChoiceDialog<String> userDialog =
+            new javafx.scene.control.ChoiceDialog<String>(users.get(0), users);
+        userDialog.setTitle("One-Time Password");
+        userDialog.setHeaderText("Select a user to set a one-time password");
+        userDialog.setContentText("User:");
+        java.util.Optional<String> userResult = userDialog.showAndWait();
+        if (!userResult.isPresent()) return;
+        String selectedUser = userResult.get();
+        javafx.scene.control.TextInputDialog otpDialog = new javafx.scene.control.TextInputDialog("");
+        otpDialog.setTitle("One-Time Password");
+        otpDialog.setHeaderText("Enter a one-time password for '" + selectedUser + "'");
+        otpDialog.setContentText("One-Time Password:");
+        java.util.Optional<String> otpResult = otpDialog.showAndWait();
+        if (!otpResult.isPresent()) return;
+        String otp = otpResult.get();
+        if (otp == null || otp.trim().length() == 0) {
+            javafx.scene.control.Alert info = new javafx.scene.control.Alert(
+            javafx.scene.control.Alert.AlertType.INFORMATION);
+            info.setTitle("One-Time Password");
+            info.setHeaderText("No Password Provided");
+            info.setContentText("One-time password was not set.");
+            info.showAndWait();
+            return;
+        }
+
+        boolean ok = theDatabase.setOneTimePassword(selectedUser, otp);
+        javafx.scene.control.Alert info = new javafx.scene.control.Alert(
+            javafx.scene.control.Alert.AlertType.INFORMATION);
+        info.setTitle("One-Time Password");
+        if (ok) {
+            info.setHeaderText("One-Time Password Set");
+            info.setContentText("A one-time password was set for '" + selectedUser + "'.");
+        } else {
+            info.setHeaderText("Operation Failed");
+            info.setContentText("Unable to set a one-time password for '" + selectedUser + "'.");
+        }
+        info.showAndWait();
+
 	}
 	
 	/**********
@@ -121,12 +176,72 @@ public class ControllerAdminHome {
 	 * this function has not yet been implemented. </p>
 	 */
 	protected static void deleteUser() {
-		System.out.println("\n*** WARNING ***: Delete User Not Yet Implemented");
-		ViewAdminHome.alertNotImplemented.setTitle("*** WARNING ***");
-		ViewAdminHome.alertNotImplemented.setHeaderText("Delete User Issue");
-		ViewAdminHome.alertNotImplemented.setContentText("Delete User Not Yet Implemented");
-		ViewAdminHome.alertNotImplemented.showAndWait();
-	}
+        java.util.List<String> users = theDatabase.getUserList();
+        if (users == null || users.size() <= 1) {
+            ViewAdminHome.alertNotImplemented.setTitle("Delete User");
+            ViewAdminHome.alertNotImplemented.setHeaderText("No Deletable Users Found");
+            ViewAdminHome.alertNotImplemented.setContentText("There are no users to delete.");
+            ViewAdminHome.alertNotImplemented.showAndWait();
+            return;
+        }
+
+        // Remove the placeholder entry and the currently logged-in admin (no self-delete)
+        users = new java.util.ArrayList<String>(users);
+        if (users.get(0).compareTo("<Select a User>") == 0) users.remove(0);
+        String loggedInUser = guiAdminHome.ViewAdminHome.theUser.getUserName();
+        users.remove(loggedInUser);
+        if (users.isEmpty()) {
+            ViewAdminHome.alertNotImplemented.setTitle("Delete User");
+            ViewAdminHome.alertNotImplemented.setHeaderText("No Deletable Users Found");
+            ViewAdminHome.alertNotImplemented.setContentText("You cannot delete your own account, and no other users are available.");
+            ViewAdminHome.alertNotImplemented.showAndWait();
+            return;
+        }
+        
+        javafx.scene.control.ChoiceDialog<String> dialog =
+            new javafx.scene.control.ChoiceDialog<String>(users.get(0), users);
+        dialog.setTitle("Delete User");
+        dialog.setHeaderText("Select a user to delete");
+        dialog.setContentText("User:");
+
+        java.util.Optional<String> result = dialog.showAndWait();
+        if (!result.isPresent()) return;
+
+        String selectedUser = result.get();
+        if (selectedUser.compareTo(loggedInUser) == 0) {
+            javafx.scene.control.Alert selfBlock = new javafx.scene.control.Alert(
+                javafx.scene.control.Alert.AlertType.INFORMATION);
+            selfBlock.setTitle("Delete User");
+            selfBlock.setHeaderText("Action Not Allowed");
+            selfBlock.setContentText("You cannot delete your own account.");
+            selfBlock.showAndWait();
+            return;
+        }
+        
+        javafx.scene.control.Alert confirm = new javafx.scene.control.Alert(
+            javafx.scene.control.Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Confirm Deletion");
+        confirm.setHeaderText("Delete user '" + selectedUser + "'?");
+        confirm.setContentText("This action cannot be undone.");
+        java.util.Optional<javafx.scene.control.ButtonType> confirmed = confirm.showAndWait();
+        if (!confirmed.isPresent() || confirmed.get() != javafx.scene.control.ButtonType.OK) return;
+        boolean ok = theDatabase.deleteUser(selectedUser);
+        javafx.scene.control.Alert info = new javafx.scene.control.Alert(
+            javafx.scene.control.Alert.AlertType.INFORMATION);
+        info.setTitle("Delete User");
+        if (ok) {
+            info.setHeaderText("User Deleted");
+            info.setContentText("User '" + selectedUser + "' was deleted.");
+            info.showAndWait();
+            // Refresh the count label
+            ViewAdminHome.label_NumberOfUsers.setText("Number of users: " +
+                    theDatabase.getNumberOfUsers());
+        } else {
+            info.setHeaderText("Delete Failed");
+            info.setContentText("Could not delete user '" + selectedUser + "'.");
+            info.showAndWait();
+        }
+    }
 	
 	/**********
 	 * <p> 
@@ -137,12 +252,41 @@ public class ControllerAdminHome {
 	 * this function has not yet been implemented. </p>
 	 */
 	protected static void listUsers() {
-		System.out.println("\n*** WARNING ***: List Users Not Yet Implemented");
-		ViewAdminHome.alertNotImplemented.setTitle("*** WARNING ***");
-		ViewAdminHome.alertNotImplemented.setHeaderText("List User Issue");
-		ViewAdminHome.alertNotImplemented.setContentText("List Users Not Yet Implemented");
-		ViewAdminHome.alertNotImplemented.showAndWait();
-	}
+		java.util.List<entityClasses.User> users = theDatabase.getAllUsers();
+        StringBuilder sb = new StringBuilder();
+        for (entityClasses.User u : users) {
+            String username = u.getUserName();
+            String fullName = safe(u.getFirstName()) +
+                    ((u.getMiddleName() != null && u.getMiddleName().length() > 0) ? " " + u.getMiddleName() : "") +
+                    ((u.getLastName() != null && u.getLastName().length() > 0) ? " " + u.getLastName() : "");
+            String email = safe(u.getEmailAddress());
+            java.util.List<String> roles = new java.util.ArrayList<String>();
+            if (u.getAdminRole()) roles.add("Admin");
+            if (u.getNewStudent()) roles.add("Student");
+            if (u.getNewStaff()) roles.add("Staff");
+            String rolesStr = roles.isEmpty() ? "(none)" : String.join(", ", roles);
+            sb.append("Username: ").append(username)
+                .append("\nName: ").append(fullName.trim())
+                .append("\nEmail: ").append(email)
+                .append("\nRoles: ").append(rolesStr)
+                .append("\n\n");
+        }
+
+        javafx.scene.control.TextArea ta = new javafx.scene.control.TextArea(sb.toString());
+        ta.setEditable(false);
+        ta.setWrapText(true);
+        ta.setPrefRowCount(20);
+        javafx.scene.control.Dialog<Void> dialog = new javafx.scene.control.Dialog<Void>();
+        dialog.setTitle("All Users");
+        dialog.setHeaderText("User Accounts");
+        javafx.scene.control.ButtonType closeBtn = new javafx.scene.control.ButtonType("Close", javafx.scene.control.ButtonBar.ButtonData.CANCEL_CLOSE);
+        dialog.getDialogPane().getButtonTypes().add(closeBtn);
+        dialog.getDialogPane().setContent(ta);
+        dialog.showAndWait();
+    }
+
+    private static String safe(String s) { return (s == null) ? "" : s; }
+
 	
 	/**********
 	 * <p> 

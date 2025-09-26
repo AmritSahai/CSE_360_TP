@@ -50,23 +50,74 @@ public class ControllerUserLogin {
     	}
 		System.out.println("*** Username is valid");
 		
-		// Check to see that the login password matches the account password
-    	String actualPassword = theDatabase.getCurrentPassword();
-    	
-    	if (password.compareTo(actualPassword) != 0) {
-    		ViewUserLogin.alertUsernamePasswordError.setContentText(
-    				"Incorrect username/password. Try again!");
-    		ViewUserLogin.alertUsernamePasswordError.showAndWait();
-    		return;
-    	}
-		System.out.println("*** Password is valid for this user");
+		// Check to see that the login password matches the account password OR the one-time password
+        String actualPassword = theDatabase.getCurrentPassword();
+        String otp = theDatabase.getOneTimePassword(username);
+        boolean usingOtp = (otp != null && otp.length() > 0 && password.compareTo(otp) == 0);
+        boolean usingNormal = (password.compareTo(actualPassword) == 0);
+        if (!usingOtp && !usingNormal) {
+            ViewUserLogin.alertUsernamePasswordError.setContentText(
+                    "Incorrect username/password. Try again!");
+            ViewUserLogin.alertUsernamePasswordError.showAndWait();
+            return;
+        }
+        System.out.println(usingOtp ? " One-Time Password accepted" : " Password is valid for this user");
 		
 		// Establish this user's details
     	User user = new User(username, password, theDatabase.getCurrentFirstName(), 
     			theDatabase.getCurrentMiddleName(), theDatabase.getCurrentLastName(), 
     			theDatabase.getCurrentPreferredFirstName(), theDatabase.getCurrentEmailAddress(), 
     			theDatabase.getCurrentAdminRole(), 
-    			theDatabase.getCurrentNewRole1(), theDatabase.getCurrentNewRole2());
+    			theDatabase.getCurrentNewStudent(), theDatabase.getCurrentNewStaff());
+    	
+    	// If using OTP, force the user to set a new password, then clear OTP and ret urn to login
+        if (usingOtp) {
+            while (true) {
+            	javafx.scene.control.Dialog<String> newPwdDialog = new javafx.scene.control.Dialog<String>();
+                newPwdDialog.setTitle("Set New Password");
+                newPwdDialog.setHeaderText("Enter a new password for your account");
+                javafx.scene.control.ButtonType okBtn = new javafx.scene.control.ButtonType("OK", javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
+                javafx.scene.control.ButtonType cancelBtn = new javafx.scene.control.ButtonType("Cancel", javafx.scene.control.ButtonBar.ButtonData.CANCEL_CLOSE);
+                newPwdDialog.getDialogPane().getButtonTypes().addAll(okBtn, cancelBtn);
+                javafx.scene.control.PasswordField pf = new javafx.scene.control.PasswordField();
+                pf.setPromptText("New Password");
+                newPwdDialog.getDialogPane().setContent(pf);
+                newPwdDialog.setResultConverter(dialogButton -> {
+                    if (dialogButton == okBtn) return pf.getText();
+                    return null;
+                });
+
+                java.util.Optional<String> newPwdResult = newPwdDialog.showAndWait();
+                if (!newPwdResult.isPresent()) {
+                    return; // user cancelled
+                }
+                String newPwd = newPwdResult.get();
+                String validation = PasswordEvaluator.PasswordEvaluator.evaluatePassword(newPwd);
+                if (validation != null && validation.length() > 0) {
+                    javafx.scene.control.Alert err = new javafx.scene.control.Alert(
+                        javafx.scene.control.Alert.AlertType.INFORMATION);
+                    err.setTitle("Invalid Password");
+                    err.setHeaderText("Password does not meet requirements");
+                    err.setContentText(validation);
+                    err.showAndWait();
+                    continue;
+                }
+                // Valid password
+                theDatabase.updatePassword(username, newPwd);
+                theDatabase.clearOneTimePassword(username);
+                javafx.scene.control.Alert info = new javafx.scene.control.Alert(
+                    javafx.scene.control.Alert.AlertType.INFORMATION);
+                info.setTitle("Password Updated");
+                info.setHeaderText("Password updated successfully");
+                info.setContentText("Please log in again with your new password.");
+                info.showAndWait();
+                // Return to login screen
+                guiUserLogin.ViewUserLogin.displayUserLogin(theStage);
+                return;
+            }
+        }
+
+        // See which home page dispatch to use (normal login)
     	
     	// See which home page dispatch to use
 		int numberOfRoles = theDatabase.getNumberOfRoles(user);		
@@ -80,15 +131,15 @@ public class ControllerUserLogin {
 				if (loginResult) {
 					guiAdminHome.ViewAdminHome.displayAdminHome(theStage, user);
 				}
-			} else if (user.getNewRole1()) {
-				loginResult = theDatabase.loginRole1(user);
+			} else if (user.getNewStudent()) {
+				loginResult = theDatabase.loginStudent(user);
 				if (loginResult) {
-					guiRole1.ViewRole1Home.displayRole1Home(theStage, user);
+					guiStudent.ViewStudentHome.displayStudentHome(theStage, user);
 				}
-			} else if (user.getNewRole2()) {
-				loginResult = theDatabase.loginRole2(user);
+			} else if (user.getNewStaff()) {
+				loginResult = theDatabase.loginStaff(user);
 				if (loginResult) {
-					guiRole2.ViewRole2Home.displayRole2Home(theStage, user);
+					guiStaff.ViewStaffHome.displayStaffHome(theStage, user);
 				}
 				// Other roles
 			} else {

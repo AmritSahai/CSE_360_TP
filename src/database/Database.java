@@ -56,8 +56,8 @@ public class Database {
 	private String currentPreferredFirstName;
 	private String currentEmailAddress;
 	private boolean currentAdminRole;
-	private boolean currentNewRole1;
-	private boolean currentNewRole2;
+	private boolean currentNewStudent;
+	private boolean currentNewStaff;
 
 	/*******
 	 * <p> Method: Database </p>
@@ -113,9 +113,13 @@ public class Database {
 				+ "preferredFirstName VARCHAR(255), "
 				+ "emailAddress VARCHAR(255), "
 				+ "adminRole BOOL DEFAULT FALSE, "
-				+ "newRole1 BOOL DEFAULT FALSE, "
-				+ "newRole2 BOOL DEFAULT FALSE)";
+				+ "newStudent BOOL DEFAULT FALSE, "
+				+ "newStaff BOOL DEFAULT FALSE)";
 		statement.execute(userTable);
+		
+		// Ensure one-time password column exists (for older DBs)
+        try { statement.execute("ALTER TABLE userDB ADD COLUMN IF NOT EXISTS oneTimePassword VARCHAR(255)"); }
+        catch (SQLException e) { /* ignore */ }
 		
 		// Create the invitation codes table
 	    String invitationCodesTable = "CREATE TABLE IF NOT EXISTS InvitationCodes ("
@@ -181,7 +185,7 @@ public class Database {
  */
 	public void register(User user) throws SQLException {
 		String insertUser = "INSERT INTO userDB (userName, password, firstName, middleName, "
-				+ "lastName, preferredFirstName, emailAddress, adminRole, newRole1, newRole2) "
+				+ "lastName, preferredFirstName, emailAddress, adminRole, newStudent, newStaff) "
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 		try (PreparedStatement pstmt = connection.prepareStatement(insertUser)) {
 			currentUsername = user.getUserName();
@@ -208,11 +212,11 @@ public class Database {
 			currentAdminRole = user.getAdminRole();
 			pstmt.setBoolean(8, currentAdminRole);
 			
-			currentNewRole1 = user.getNewRole1();
-			pstmt.setBoolean(9, currentNewRole1);
+			currentNewStudent = user.getNewStudent();
+			pstmt.setBoolean(9, currentNewStudent);
 			
-			currentNewRole2 = user.getNewRole2();
-			pstmt.setBoolean(10, currentNewRole2);
+			currentNewStaff = user.getNewStaff();
+			pstmt.setBoolean(10, currentNewStaff);
 			
 			pstmt.executeUpdate();
 		}
@@ -271,7 +275,7 @@ public class Database {
 	
 	
 /*******
- * <p> Method: boolean loginRole1(User user) </p>
+ * <p> Method: boolean loginStudent(User user) </p>
  * 
  * <p> Description: Check to see that a user with the specified username, password, and role
  * 		is the same as a row in the table for the username, password, and role. </p>
@@ -281,10 +285,10 @@ public class Database {
  * @return true if the specified user has been logged in as an Student else false.
  * 
  */
-	public boolean loginRole1(User user) {
+	public boolean loginStudent(User user) {
 		// Validates a student user's login credentials.
 		String query = "SELECT * FROM userDB WHERE userName = ? AND password = ? AND "
-				+ "newRole1 = TRUE";
+				+ "newStudent = TRUE";
 		try (PreparedStatement pstmt = connection.prepareStatement(query)) {
 			pstmt.setString(1, user.getUserName());
 			pstmt.setString(2, user.getPassword());
@@ -297,7 +301,7 @@ public class Database {
 	}
 
 	/*******
-	 * <p> Method: boolean loginRole2(User user) </p>
+	 * <p> Method: boolean loginStaff(User user) </p>
 	 * 
 	 * <p> Description: Check to see that a user with the specified username, password, and role
 	 * 		is the same as a row in the table for the username, password, and role. </p>
@@ -308,9 +312,9 @@ public class Database {
 	 * 
 	 */
 	// Validates a reviewer user's login credentials.
-	public boolean loginRole2(User user) {
+	public boolean loginStaff(User user) {
 		String query = "SELECT * FROM userDB WHERE userName = ? AND password = ? AND "
-				+ "newRole2 = TRUE";
+				+ "newStaff = TRUE";
 		try (PreparedStatement pstmt = connection.prepareStatement(query)) {
 			pstmt.setString(1, user.getUserName());
 			pstmt.setString(2, user.getPassword());
@@ -366,8 +370,8 @@ public class Database {
 	public int getNumberOfRoles (User user) {
 		int numberOfRoles = 0;
 		if (user.getAdminRole()) numberOfRoles++;
-		if (user.getNewRole1()) numberOfRoles++;
-		if (user.getNewRole2()) numberOfRoles++;
+		if (user.getNewStudent()) numberOfRoles++;
+		if (user.getNewStaff()) numberOfRoles++;
 		return numberOfRoles;
 	}	
 
@@ -829,8 +833,8 @@ public class Database {
 	    	currentPreferredFirstName = rs.getString(7);
 	    	currentEmailAddress = rs.getString(8);
 	    	currentAdminRole = rs.getBoolean(9);
-	    	currentNewRole1 = rs.getBoolean(10);
-	    	currentNewRole2 = rs.getBoolean(11);
+	    	currentNewStudent = rs.getBoolean(10);
+	    	currentNewStaff = rs.getBoolean(11);
 			return true;
 	    } catch (SQLException e) {
 			return false;
@@ -870,31 +874,31 @@ public class Database {
 				return false;
 			}
 		}
-		if (role.compareTo("Role1") == 0) {
-			String query = "UPDATE userDB SET newRole1 = ? WHERE username = ?";
+		if (role.compareTo("Student") == 0) {
+			String query = "UPDATE userDB SET newStudent = ? WHERE username = ?";
 			try (PreparedStatement pstmt = connection.prepareStatement(query)) {
 				pstmt.setString(1, value);
 				pstmt.setString(2, username);
 				pstmt.executeUpdate();
 				if (value.compareTo("true") == 0)
-					currentNewRole1 = true;
+					currentNewStudent = true;
 				else
-					currentNewRole1 = false;
+					currentNewStudent = false;
 				return true;
 			} catch (SQLException e) {
 				return false;
 			}
 		}
-		if (role.compareTo("Role2") == 0) {
-			String query = "UPDATE userDB SET newRole2 = ? WHERE username = ?";
+		if (role.compareTo("Staff") == 0) {
+			String query = "UPDATE userDB SET newStaff = ? WHERE username = ?";
 			try (PreparedStatement pstmt = connection.prepareStatement(query)) {
 				pstmt.setString(1, value);
 				pstmt.setString(2, username);
 				pstmt.executeUpdate();
 				if (value.compareTo("true") == 0)
-					currentNewRole2 = true;
+					currentNewStaff = true;
 				else
-					currentNewRole2 = false;
+					currentNewStaff = false;
 				return true;
 			} catch (SQLException e) {
 				return false;
@@ -994,26 +998,109 @@ public class Database {
 
 	
 	/*******
-	 * <p> Method: boolean getCurrentNewRole1() </p>
+	 * <p> Method: boolean getCurrentNewStudent() </p>
 	 * 
 	 * <p> Description: Get the current user's Student role attribute.</p>
 	 * 
 	 * @return true if this user plays a Student role, else false
 	 *  
 	 */
-	public boolean getCurrentNewRole1() { return currentNewRole1;};
+	public boolean getCurrentNewStudent() { return currentNewStudent;};
 
 	
 	/*******
-	 * <p> Method: boolean getCurrentNewRole2() </p>
+	 * <p> Method: boolean getCurrentNewStaff() </p>
 	 * 
 	 * <p> Description: Get the current user's Reviewer role attribute.</p>
 	 * 
 	 * @return true if this user plays a Reviewer role, else false
 	 *  
 	 */
-	public boolean getCurrentNewRole2() { return currentNewRole2;};
+	public boolean getCurrentNewStaff() { return currentNewStaff;};
 
+	
+	public boolean deleteUser(String username) {
+        String query = "DELETE FROM userDB WHERE userName = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+            pstmt.setString(1, username);
+            int affected = pstmt.executeUpdate();
+            return affected > 0;
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+	
+	public List<User> getAllUsers() {
+        List<User> users = new ArrayList<User>();
+        String query = "SELECT userName, password, firstName, middleName, lastName, " +
+                "preferredFirstName, emailAddress, adminRole, newStudent, newStaff FROM userDB ORDER BY userName";
+        try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                User u = new User(
+                    rs.getString("userName"),
+                    rs.getString("password"),
+                    rs.getString("firstName"),
+                    rs.getString("middleName"),
+                    rs.getString("lastName"),
+                    rs.getString("preferredFirstName"),
+                    rs.getString("emailAddress"),
+                    rs.getBoolean("adminRole"),
+                    rs.getBoolean("newStudent"),
+                    rs.getBoolean("newStaff")
+                );
+                users.add(u);
+            }
+        } catch (SQLException e) {
+            return users;
+        }
+        return users;
+    }
+	
+	/***
+    
+	<p> Method: boolean setOneTimePassword(String username, String otp) </p>
+	<p> Description: Sets a one-time password value for a user. </p>*/
+	public boolean setOneTimePassword(String username, String otp) {
+	    String query = "UPDATE userDB SET oneTimePassword = ? WHERE userName = ?";
+	    try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+	        pstmt.setString(1, otp);
+	        pstmt.setString(2, username);
+	        return pstmt.executeUpdate() > 0;} catch (SQLException e) { return false; }}
+
+	    /***
+	     
+	<p> Method: String getOneTimePassword(String username) </p>
+	<p> Description: Returns the one-time password for a user, or null if not set. </p>*/
+	public String getOneTimePassword(String username) {
+	    String query = "SELECT oneTimePassword FROM userDB WHERE userName = ?";
+	    try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+	        pstmt.setString(1, username);
+	        ResultSet rs = pstmt.executeQuery();
+	        if (rs.next()) return rs.getString(1);} catch (SQLException e) { /* ignore */ }
+	    return null;}
+	/***
+	     
+	<p> Method: boolean clearOneTimePassword(String username) </p>
+	<p> Description: Clears the one-time password value for a user. </p>*/
+	public boolean clearOneTimePassword(String username) {
+	    String query = "UPDATE userDB SET oneTimePassword = NULL WHERE userName = ?";
+	    try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+	        pstmt.setString(1, username);
+	        return pstmt.executeUpdate() > 0;} catch (SQLException e) { return false; }}
+
+	    /***
+	     
+	<p> Method: boolean updatePassword(String username, String newPassword) </p>
+	<p> Description: Updates the primary password for a user. </p>*/
+	public boolean updatePassword(String username, String newPassword) {
+	    String query = "UPDATE userDB SET password = ? WHERE userName = ?";
+	    try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+	        pstmt.setString(1, newPassword);
+	        pstmt.setString(2, username);
+	        int n = pstmt.executeUpdate();
+	        if (n > 0) { currentPassword = newPassword; }
+	        return n > 0;} catch (SQLException e) { return false; }}
 	
 	/*******
 	 * <p> Debugging method</p>
