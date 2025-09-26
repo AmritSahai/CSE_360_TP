@@ -45,8 +45,11 @@ public class ControllerNewAccount {
 		// with a different password.
 		String userInvalid = UsernameEvaluator.checkForValidUserName(username);
 		if (!userInvalid.equals("")) {
-			ViewNewAccount.alertInvalidUsername.setContentText(userInvalid);
+			ViewNewAccount.alertInvalidUsername.setTitle("Invalid Username");
+			ViewNewAccount.alertInvalidUsername.setHeaderText(userInvalid);
+			ViewNewAccount.alertInvalidUsername.setContentText("Correct the username and try again.");
 			ViewNewAccount.alertInvalidUsername.showAndWait();
+			System.out.println("Invalid Username: " + userInvalid);
 			return;
 		}
 		
@@ -55,8 +58,11 @@ public class ControllerNewAccount {
 		// with a different password.
 		String passwordInvalid = PasswordEvaluator.evaluatePassword(password);
 		if (!passwordInvalid.equals("")) {
-			ViewNewAccount.alertInvalidPassword.setContentText(passwordInvalid);
+			ViewNewAccount.alertInvalidPassword.setTitle("Invalid Password");
+			ViewNewAccount.alertInvalidPassword.setHeaderText(passwordInvalid);
+			ViewNewAccount.alertInvalidPassword.setContentText("Correct the passwords and try again.");
 			ViewNewAccount.alertInvalidPassword.showAndWait();
+			System.out.println("Invalid Password: " + passwordInvalid);
 			return;
 		}
 		

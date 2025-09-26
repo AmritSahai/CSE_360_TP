@@ -1,6 +1,9 @@
 package guiFirstAdmin;
 
 import java.sql.SQLException;
+
+import PasswordEvaluator.PasswordEvaluator;
+import UsernameEvaluator.UsernameEvaluator;
 import database.Database;
 import entityClasses.User;
 import javafx.stage.Stage;
@@ -79,6 +82,33 @@ public class ControllerFirstAdmin {
 		// Make sure the two passwords are the same
 		if (adminPassword1.compareTo(adminPassword2) == 0) {
         	// Create the passwords and proceed to the user home page
+			
+			
+			//Check that the username aligns with the set requirements.
+			// If it does not, an alert error will be displayed and the user will need to come up
+			// with a different password.
+			String adminUserInvalid = UsernameEvaluator.checkForValidUserName(adminUsername);
+			if (!adminUserInvalid.equals("")) {
+				ViewFirstAdmin.alertInvalidAdminUsername.setTitle("Invalid Username");
+				ViewFirstAdmin.alertInvalidAdminUsername.setHeaderText(adminUserInvalid);
+				ViewFirstAdmin.alertInvalidAdminUsername.setContentText("Correct the username and try again.");
+				ViewFirstAdmin.alertInvalidAdminUsername.showAndWait();
+				System.out.println("Invalid Username: " + adminUserInvalid);
+				return;
+			}
+			
+			// Check that the password aligns with the set requirements.
+			// If it does not, an alert error will be displayed and the user will need to come up
+			// with a different password.
+			String adminPasswordInvalid = PasswordEvaluator.evaluatePassword(adminPassword1);
+			if (!adminPasswordInvalid.equals("")) {
+				ViewFirstAdmin.alertInvalidAdminPassword.setTitle("Invalid Password");
+				ViewFirstAdmin.alertInvalidAdminPassword.setHeaderText(adminPasswordInvalid);
+				ViewFirstAdmin.alertInvalidAdminPassword.setContentText("Correct the passwords and try again.");
+				ViewFirstAdmin.alertInvalidAdminPassword.showAndWait();
+				System.out.println("Invalid Password: " + adminPasswordInvalid);
+				return;
+			}
         	User user = new User(adminUsername, adminPassword1, "", "", "", "", "", true, false, 
         			false);
             try {
