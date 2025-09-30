@@ -199,10 +199,16 @@ public class ControllerAdminHome {
         }
         
         javafx.scene.control.ChoiceDialog<String> dialog =
-            new javafx.scene.control.ChoiceDialog<String>(users.get(0), users);
+        		new javafx.scene.control.ChoiceDialog<String>(users.get(0), users);
         dialog.setTitle("Delete User");
         dialog.setHeaderText("Select a user to delete");
         dialog.setContentText("User:");
+
+        // Change OK/Cancel → Yes/No
+        dialog.getDialogPane().getButtonTypes().setAll(
+        	   new javafx.scene.control.ButtonType("Yes", javafx.scene.control.ButtonBar.ButtonData.OK_DONE),
+        	   new javafx.scene.control.ButtonType("No", javafx.scene.control.ButtonBar.ButtonData.CANCEL_CLOSE)
+        );
 
         java.util.Optional<String> result = dialog.showAndWait();
         if (!result.isPresent()) return;
@@ -223,8 +229,18 @@ public class ControllerAdminHome {
         confirm.setTitle("Confirm Deletion");
         confirm.setHeaderText("Delete user '" + selectedUser + "'?");
         confirm.setContentText("This action cannot be undone.");
+        
+     // Clear default buttons (OK/Cancel) and replace with Yes/No
+        confirm.getButtonTypes().setAll(
+            new javafx.scene.control.ButtonType("Yes", javafx.scene.control.ButtonBar.ButtonData.OK_DONE),
+            new javafx.scene.control.ButtonType("No", javafx.scene.control.ButtonBar.ButtonData.CANCEL_CLOSE)
+        );
+
         java.util.Optional<javafx.scene.control.ButtonType> confirmed = confirm.showAndWait();
-        if (!confirmed.isPresent() || confirmed.get() != javafx.scene.control.ButtonType.OK) return;
+        if (!confirmed.isPresent() || confirmed.get().getButtonData() != javafx.scene.control.ButtonBar.ButtonData.OK_DONE) {
+            return; // Treat "No" or close as cancel
+        }
+
         boolean ok = theDatabase.deleteUser(selectedUser);
         javafx.scene.control.Alert info = new javafx.scene.control.Alert(
             javafx.scene.control.Alert.AlertType.INFORMATION);

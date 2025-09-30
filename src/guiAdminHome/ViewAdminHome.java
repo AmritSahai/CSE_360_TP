@@ -170,7 +170,10 @@ public class ViewAdminHome {
 		// Populate the dynamic aspects of the GUI with the data from the user and the current
 		// state of the system.
 		theDatabase.getUserAccountDetails(user.getUserName());		// Fetch this user's data
-		applicationMain.FoundationsMain.activeHomePage = theRole;	// Set this as the active Home																	// UserUpdate page
+		applicationMain.FoundationsMain.activeHomePage = theRole;	// Set this as the active Home
+		
+		// Set the username display now that theUser is properly initialized
+		label_UserDetails.setText("User: " + theUser.getUserName());
 
 		// Set the role for potential users to the default (No role selected)
 		combobox_SelectRole.getSelectionModel().select(0);
@@ -204,7 +207,7 @@ public class ViewAdminHome {
 		label_PageTitle.setText("Admin Home Page");
 		setupLabelUI(label_PageTitle, "Arial", 28, width, Pos.CENTER, 0, 5);
 
-		label_UserDetails.setText("User: " + theUser.getUserName());
+		// Username will be set in displayAdminHome method after theUser is properly initialized
 		setupLabelUI(label_UserDetails, "Arial", 20, width, Pos.BASELINE_LEFT, 20, 55);
 		
 		setupButtonUI(button_UpdateThisUser, "Dialog", 18, 170, Pos.CENTER, 610, 45);
