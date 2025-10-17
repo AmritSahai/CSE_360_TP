@@ -53,9 +53,12 @@ public class ViewStudentHome {
 	// This is a separator and it is used to partition the GUI for various tasks
 	protected static Line line_Separator1 = new Line(20, 95, width-20, 95);
 
-	// GUI ARea 2: This is a stub, so there are no widgets here.  For an actual role page, this are
-	// would contain the widgets needed for the user to play the assigned role.
-	
+	// GUI Area 2: Forum functionality widgets
+		protected static Label label_ForumSection = new Label("Forum");
+		protected static Button button_CreatePost = new Button("Create Post");
+		protected static Button button_SearchPosts = new Button("Search Posts");
+		protected static Button button_ViewMyPosts = new Button("My Posts");
+		protected static Button button_ViewAllPosts = new Button("View All Posts");
 	
 	
 	// This is a separator and it is used to partition the GUI for various tasks
@@ -165,11 +168,21 @@ public class ViewStudentHome {
 		button_UpdateThisUser.setOnAction((event) ->
 			{ViewUserUpdate.displayUserUpdate(theStage, theUser); });
 		
-		// GUI Area 2
-		
-			// This is a stub, so this area is empty
-		
-		
+		// GUI Area 2 - Forum functionality
+		setupLabelUI(label_ForumSection, "Arial", 22, 200, Pos.BASELINE_LEFT, 20, 110);
+				
+		setupButtonUI(button_CreatePost, "Dialog", 16, 200, Pos.CENTER, 20, 150);
+		button_CreatePost.setOnAction((event) -> {ControllerStudentHome.createPost(); });
+				
+		setupButtonUI(button_SearchPosts, "Dialog", 16, 200, Pos.CENTER, 20, 200);
+		button_SearchPosts.setOnAction((event) -> {ControllerStudentHome.searchPosts(); });
+				
+		setupButtonUI(button_ViewMyPosts, "Dialog", 16, 200, Pos.CENTER, 20, 250);
+		button_ViewMyPosts.setOnAction((event) -> {ControllerStudentHome.viewMyPosts(); });
+				
+		setupButtonUI(button_ViewAllPosts, "Dialog", 16, 200, Pos.CENTER, 20, 300);
+		button_ViewAllPosts.setOnAction((event) -> {ControllerStudentHome.viewAllPosts(); });
+			
 		// GUI Area 3
         setupButtonUI(button_Logout, "Dialog", 18, 250, Pos.CENTER, 20, 540);
         button_Logout.setOnAction((event) -> {ControllerStudentHome.performLogout(); });
@@ -182,6 +195,8 @@ public class ViewStudentHome {
 		// Place all of the widget items into the Root Pane's list of children
          theRootPane.getChildren().addAll(
 			label_PageTitle, label_UserDetails, button_UpdateThisUser, line_Separator1,
+			label_ForumSection, button_CreatePost, button_SearchPosts, 
+			button_ViewMyPosts, button_ViewAllPosts,
 	        line_Separator4, button_Logout, button_Quit);
 }
 	

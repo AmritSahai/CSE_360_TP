@@ -5,11 +5,14 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 import entityClasses.User;
+import entityClasses.Post;
+import entityClasses.Reply;
 
 /*******
  * <p> Title: Database Class. </p>
@@ -127,6 +130,29 @@ public class Database {
 	    		+ "emailAddress VARCHAR(255), "
 	            + "role VARCHAR(10))";
 	    statement.execute(invitationCodesTable);
+	 // Create the posts table
+	    String postsTable = "CREATE TABLE IF NOT EXISTS postsDB ("
+	            + "postId VARCHAR(50) PRIMARY KEY, "
+	            + "title VARCHAR(100), "
+	            + "body VARCHAR(5000), "
+	            + "authorUsername VARCHAR(255), "
+	            + "thread VARCHAR(100), "
+	            + "createdAt TIMESTAMP, "
+	            + "lastEditedAt TIMESTAMP, "
+	            + "isDeleted BOOLEAN DEFAULT FALSE)";
+	    statement.execute(postsTable);
+	    
+	    // Create the replies table
+	    String repliesTable = "CREATE TABLE IF NOT EXISTS repliesDB ("
+	            + "replyId VARCHAR(50) PRIMARY KEY, "
+	            + "body VARCHAR(3000), "
+	            + "authorUsername VARCHAR(255), "
+	            + "parentPostId VARCHAR(50), "
+	            + "createdAt TIMESTAMP, "
+	            + "lastEditedAt TIMESTAMP, "
+	            + "isDeleted BOOLEAN DEFAULT FALSE, "
+	            + "isRead BOOLEAN DEFAULT FALSE)";
+	    statement.execute(repliesTable);
 	}
 
 
@@ -1125,6 +1151,138 @@ public class Database {
 		}
 		resultSet.close();
 	}
+	
+	// ==================== POST DATABASE METHODS ====================
+	
+		/*******
+		 * <p> Method: void savePost(Post post) </p>
+		 * 
+		 * <p> Description: Saves a post to the database.</p>
+		 * 
+		 */
+		public void savePost(Post post) throws SQLException {
+			String query = "MERGE INTO postsDB (postId, title, body, authorUsername, thread, " +
+			               "createdAt, lastEditedAt, isDeleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+			try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+				pstmt.setString(1, post.getPostId());
+				pstmt.setString(2, post.getTitle());
+				pstmt.setString(3, post.getBody());
+				pstmt.setString(4, post.getAuthorUsername());
+				pstmt.setString(5, post.getThread());
+				pstmt.setObject(6, post.getCreatedAt());
+				pstmt.setObject(7, post.getLastEditedAt());
+				pstmt.setBoolean(8, post.isDeleted());
+				pstmt.executeUpdate();
+			}
+		}
+		
+		/*******
+		 * <p> Method: List<Post> loadAllPosts() </p>
+		 * 
+		 * <p> Description: Loads all posts from the database.</p>
+		 * 
+		 */
+		public List<Post> loadAllPosts() throws SQLException {
+			List<Post> posts = new ArrayList<>();
+			String query = "SELECT * FROM postsDB";
+			try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+				ResultSet rs = pstmt.executeQuery();
+				while (rs.next()) {
+					Post post = new Post(
+						rs.getString("postId"),
+						rs.getString("title"),
+						rs.getString("body"),
+						rs.getString("authorUsername"),
+						rs.getString("thread")
+					);
+					post.setCreatedAt(rs.getObject("createdAt", LocalDateTime.class));
+					post.setLastEditedAt(rs.getObject("lastEditedAt", LocalDateTime.class));
+					post.setDeleted(rs.getBoolean("isDeleted"));
+					posts.add(post);
+				}
+			}
+			return posts;
+		}
+		
+		/*******
+		 * <p> Method: void deletePost(String postId) </p>
+		 * 
+		 * <p> Description: Deletes a post from the database.</p>
+		 * 
+		 */
+		public void deletePostFromDB(String postId) throws SQLException {
+			String query = "DELETE FROM postsDB WHERE postId = ?";
+			try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+				pstmt.setString(1, postId);
+				pstmt.executeUpdate();
+			}
+		}
+		
+		// ==================== REPLY DATABASE METHODS ====================
+		
+		/*******
+		 * <p> Method: void saveReply(Reply reply) </p>
+		 * 
+		 * <p> Description: Saves a reply to the database.</p>
+		 * 
+		 */
+		public void saveReply(Reply reply) throws SQLException {
+			String query = "MERGE INTO repliesDB (replyId, body, authorUsername, parentPostId, " +
+			               "createdAt, lastEditedAt, isDeleted, isRead) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+			try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+				pstmt.setString(1, reply.getReplyId());
+				pstmt.setString(2, reply.getBody());
+				pstmt.setString(3, reply.getAuthorUsername());
+				pstmt.setString(4, reply.getParentPostId());
+				pstmt.setObject(5, reply.getCreatedAt());
+				pstmt.setObject(6, reply.getLastEditedAt());
+				pstmt.setBoolean(7, reply.isDeleted());
+				pstmt.setBoolean(8, reply.isRead());
+				pstmt.executeUpdate();
+			}
+		}
+		
+		/*******
+		 * <p> Method: List<Reply> loadAllReplies() </p>
+		 * 
+		 * <p> Description: Loads all replies from the database.</p>
+		 * 
+		 */
+		public List<Reply> loadAllReplies() throws SQLException {
+			List<Reply> replies = new ArrayList<>();
+			String query = "SELECT * FROM repliesDB";
+			try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+				ResultSet rs = pstmt.executeQuery();
+				while (rs.next()) {
+					Reply reply = new Reply(
+						rs.getString("replyId"),
+						rs.getString("body"),
+						rs.getString("authorUsername"),
+						rs.getString("parentPostId")
+					);
+					reply.setCreatedAt(rs.getObject("createdAt", LocalDateTime.class));
+					reply.setLastEditedAt(rs.getObject("lastEditedAt", LocalDateTime.class));
+					reply.setDeleted(rs.getBoolean("isDeleted"));
+					reply.setRead(rs.getBoolean("isRead"));
+					replies.add(reply);
+				}
+			}
+			return replies;
+		}
+		
+		/*******
+		 * <p> Method: void deleteReply(String replyId) </p>
+		 * 
+		 * <p> Description: Deletes a reply from the database.</p>
+		 * 
+		 */
+		public void deleteReplyFromDB(String replyId) throws SQLException {
+			String query = "DELETE FROM repliesDB WHERE replyId = ?";
+			try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+				pstmt.setString(1, replyId);
+				pstmt.executeUpdate();
+			}
+		}
 
 
 	/*******
