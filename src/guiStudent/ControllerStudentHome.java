@@ -3,7 +3,7 @@ package guiStudent;
 import java.util.List;
 import java.util.Optional;
 import javafx.scene.control.*;
-import javafx.scene.layout.GridPane;
+import javafx.scene.layout.*;
 import javafx.geometry.Insets;
 import entityClasses.Post;
 import entityClasses.Reply;
@@ -203,73 +203,87 @@ public class ControllerStudentHome {
 			return;
 		}
 		
-		StringBuilder sb = new StringBuilder();
+		// Create a scrollable pane with individual post cards
+		ScrollPane scrollPane = new ScrollPane();
+		VBox postContainer = new VBox(10);
+		postContainer.setPadding(new Insets(10));
+		
 		for (Post post : postList) {
 			int replyCount = replies.getReplyCountForPost(post.getPostId());
 			int unreadCount = replies.getUnreadReplyCountForPost(post.getPostId(), currentUsername);
 			
-			sb.append("━".repeat(60)).append("\n");
-			sb.append("ID: ").append(post.getPostId()).append("\n");
-			sb.append("Title: ").append(post.getTitle()).append("\n");
-			sb.append("Author: ").append(post.getAuthorUsername()).append("\n");
-			sb.append("Thread: ").append(post.getThread()).append("\n");
-			sb.append("Created: ").append(post.getFormattedCreatedAt()).append("\n");
-			if (post.getLastEditedAt() != null) {
-				sb.append("Edited: ").append(post.getFormattedLastEditedAt()).append("\n");
-			}
-			sb.append("Replies: ").append(replyCount);
-			if (unreadCount > 0) {
-				sb.append(" (").append(unreadCount).append(" unread)");
-			}
-			sb.append("\n");
+			// Create a card for each post
+			VBox postCard = new VBox(5);
+			postCard.setStyle("-fx-border-color: #cccccc; -fx-border-width: 1; -fx-padding: 10; -fx-background-color: #f9f9f9;");
+			
+			// Post header with title and metadata
+			HBox headerBox = new HBox(10);
+			Label titleLabel = new Label(post.getTitle());
+			titleLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14;");
+						
+			Label authorLabel = new Label("by " + post.getAuthorUsername());
+			authorLabel.setStyle("-fx-font-size: 12; -fx-text-fill: #666666;");
+						
+			Label dateLabel = new Label(post.getFormattedCreatedAt());
+			dateLabel.setStyle("-fx-font-size: 12; -fx-text-fill: #666666;");
+						
+			headerBox.getChildren().addAll(titleLabel, authorLabel, dateLabel);
+						
+			// Post content
+			Label threadLabel = new Label("Thread: " + post.getThread());
+			threadLabel.setStyle("-fx-font-size: 12; -fx-text-fill: #666666;");
+						
+			Label replyLabel = new Label("Replies: " + replyCount + 
+				(unreadCount > 0 ? " (" + unreadCount + " unread)" : ""));
+			replyLabel.setStyle("-fx-font-size: 12; -fx-text-fill: #666666;");
+						
+			// Post body preview
+			Label bodyLabel;
 			
 			if (post.isDeleted()) {
-				sb.append("[DELETED POST]\n");
+				bodyLabel = new Label("[DELETED POST]");
+				bodyLabel.setStyle("-fx-font-style: italic; -fx-text-fill: #999999;");
 			} else {
-				String preview = post.getBody().length() > 100 ? 
-					post.getBody().substring(0, 100) + "..." : post.getBody();
-				sb.append("Body: ").append(preview).append("\n");
+				String preview = post.getBody().length() > 150 ? 
+					post.getBody().substring(0, 150) + "..." : post.getBody();
+				bodyLabel = new Label(preview);
+				bodyLabel.setWrapText(true);
 			}
-			sb.append("\n");
+			// Action buttons
+			HBox buttonBox = new HBox(10);
+			Button viewBtn = new Button("View Details");
+			viewBtn.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white;");
+			viewBtn.setOnAction(e -> viewPostDetails(post.getPostId()));
+						
+			Button editBtn = new Button("Edit");
+			editBtn.setStyle("-fx-background-color: #2196F3; -fx-text-fill: white;");
+			editBtn.setOnAction(e -> editPost(post.getPostId()));
+			editBtn.setDisable(!post.canEdit(currentUsername));
+						
+			Button deleteBtn = new Button("Delete");
+			deleteBtn.setStyle("-fx-background-color: #f44336; -fx-text-fill: white;");
+			deleteBtn.setOnAction(e -> deletePost(post.getPostId()));
+			deleteBtn.setDisable(!post.canDelete(currentUsername));
+						
+			buttonBox.getChildren().addAll(viewBtn, editBtn, deleteBtn);
+						
+			// Add all elements to the post card
+			postCard.getChildren().addAll(headerBox, threadLabel, replyLabel, bodyLabel, buttonBox);
+			postContainer.getChildren().add(postCard);
 		}
 		
-		TextArea textArea = new TextArea(sb.toString());
-		textArea.setEditable(false);
-		textArea.setWrapText(true);
-		textArea.setPrefRowCount(20);
-		textArea.setPrefColumnCount(60);
+		scrollPane.setContent(postContainer);
+		scrollPane.setPrefSize(800, 600);
+		scrollPane.setFitToWidth(true);
 		
 		Dialog<Void> dialog = new Dialog<>();
 		dialog.setTitle(title);
-		dialog.setHeaderText(postList.size() + " post(s) found - Click on a post ID to view details");
-		dialog.getDialogPane().setContent(textArea);
+		dialog.setHeaderText(postList.size() + " post(s) found - Use the buttons to interact with posts");
+		dialog.getDialogPane().setContent(scrollPane);
 		
-		// Use "Continue" button instead of "Close"
-		ButtonType continueBtn = new ButtonType("Continue", ButtonBar.ButtonData.OK_DONE);
-		dialog.getDialogPane().getButtonTypes().add(continueBtn);
+		ButtonType closeBtn = new ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE);
+		dialog.getDialogPane().getButtonTypes().add(closeBtn);
 		dialog.showAndWait();
-		
-		// Prompt to view a specific post
-		promptViewPost();
-	}
-	
-	
-	/**********
-	 * <p> Method: promptViewPost() </p>
-	 * 
-	 * <p> Description: Prompts user to view a specific post.</p>
-	 * 
-	 */
-	private static void promptViewPost() {
-		TextInputDialog dialog = new TextInputDialog();
-		dialog.setTitle("View Post");
-		dialog.setHeaderText("View post details");
-		dialog.setContentText("Enter Post ID:");
-		
-		Optional<String> result = dialog.showAndWait();
-		if (result.isPresent() && !result.get().trim().isEmpty()) {
-			viewPostDetails(result.get().trim());
-		}
 	}
 	
 	
@@ -282,6 +296,7 @@ public class ControllerStudentHome {
 	private static void viewPostDetails(String postId) {
 		PostCollection posts = ModelStudentHome.getPostCollection();
 		ReplyCollection replies = ModelStudentHome.getReplyCollection();
+		String currentUsername = ViewStudentHome.theUser.getUserName();
 		
 		Post post = posts.getPostById(postId);
 		if (post == null) {
@@ -293,92 +308,154 @@ public class ControllerStudentHome {
 			return;
 		}
 		
-		// Build post details
-		StringBuilder sb = new StringBuilder();
-		sb.append("Title: ").append(post.getTitle()).append("\n");
-		sb.append("Author: ").append(post.getAuthorUsername()).append("\n");
-		sb.append("Thread: ").append(post.getThread()).append("\n");
-		sb.append("Created: ").append(post.getFormattedCreatedAt()).append("\n");
+		// Create main container
+		VBox mainContainer = new VBox(15);
+		mainContainer.setPadding(new Insets(15));
+				
+		// Post details section
+		VBox postSection = new VBox(10);
+		postSection.setStyle("-fx-border-color: #cccccc; -fx-border-width: 1; -fx-padding: 15; -fx-background-color: #f9f9f9;");
+				
+		// Post header
+		HBox postHeader = new HBox(10);
+		Label postTitle = new Label(post.getTitle());
+		postTitle.setStyle("-fx-font-weight: bold; -fx-font-size: 16;");
+				
+		Label postAuthor = new Label("by " + post.getAuthorUsername());
+		postAuthor.setStyle("-fx-font-size: 12; -fx-text-fill: #666666;");
+				
+		Label postDate = new Label(post.getFormattedCreatedAt());
+		postDate.setStyle("-fx-font-size: 12; -fx-text-fill: #666666;");
+				
+		postHeader.getChildren().addAll(postTitle, postAuthor, postDate);
+				
+		// Post metadata
+		Label threadLabel = new Label("Thread: " + post.getThread());
+		threadLabel.setStyle("-fx-font-size: 12; -fx-text-fill: #666666;");
+		
 		if (post.getLastEditedAt() != null) {
-			sb.append("Edited: ").append(post.getFormattedLastEditedAt()).append("\n");
+			Label editedLabel = new Label("Edited: " + post.getFormattedLastEditedAt());
+			editedLabel.setStyle("-fx-font-size: 12; -fx-text-fill: #666666;");
+			postSection.getChildren().addAll(postHeader, threadLabel, editedLabel);
+		} else {
+			postSection.getChildren().addAll(postHeader, threadLabel);
 		}
-		sb.append("\n");
 		
+		// Post body
+		Label postBody;
 		if (post.isDeleted()) {
-			sb.append("[Original post deleted]\n\n");
+			postBody = new Label("[Original post deleted]");
+			postBody.setStyle("-fx-font-style: italic; -fx-text-fill: #999999;");
 		} else {
-			sb.append(post.getBody()).append("\n\n");
+			postBody = new Label(post.getBody());
+			postBody.setWrapText(true);
 		}
+		postSection.getChildren().add(postBody);
 		
-		// Get replies
+		// Post action buttons
+		HBox postButtonBox = new HBox(10);
+		Button editPostBtn = new Button("Edit Post");
+		editPostBtn.setStyle("-fx-background-color: #2196F3; -fx-text-fill: white;");
+		editPostBtn.setOnAction(e -> editPost(postId));
+		editPostBtn.setDisable(!post.canEdit(currentUsername));
+				
+		Button deletePostBtn = new Button("Delete Post");
+		deletePostBtn.setStyle("-fx-background-color: #f44336; -fx-text-fill: white;");
+		deletePostBtn.setOnAction(e -> deletePost(postId));
+		deletePostBtn.setDisable(!post.canDelete(currentUsername));
+				
+		Button addReplyBtn = new Button("Add Reply");
+		addReplyBtn.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white;");
+		addReplyBtn.setOnAction(e -> createReply(postId));
+				
+		postButtonBox.getChildren().addAll(editPostBtn, deletePostBtn, addReplyBtn);
+		postSection.getChildren().add(postButtonBox);
+				
+		mainContainer.getChildren().add(postSection);
+				
+		// Replies section
 		List<Reply> replyList = replies.getRepliesForPost(postId);
-		sb.append("═".repeat(60)).append("\n");
-		sb.append("REPLIES (").append(replyList.size()).append(")\n");
-		sb.append("═".repeat(60)).append("\n\n");
-		
-		if (replyList.isEmpty()) {
-			sb.append("No replies yet.\n");
-		} else {
-			for (Reply reply : replyList) {
-				sb.append("━".repeat(40)).append("\n");
-				sb.append("Reply ID: ").append(reply.getReplyId()).append("\n");
-				sb.append("Author: ").append(reply.getAuthorUsername());
-				if (reply.isUnread()) {
-					sb.append(" [UNREAD]");
-				}
-				sb.append("\n");
-				sb.append("Posted: ").append(reply.getFormattedCreatedAt()).append("\n");
-				if (reply.getLastEditedAt() != null) {
-					sb.append("Edited: ").append(reply.getFormattedLastEditedAt()).append("\n");
-				}
-				sb.append("\n");
-			sb.append(reply.getDisplayBody()).append("\n\n");
+		if (!replyList.isEmpty()) {
+			Label repliesHeader = new Label("REPLIES (" + replyList.size() + ")");
+			repliesHeader.setStyle("-fx-font-weight: bold; -fx-font-size: 14;");
+			mainContainer.getChildren().add(repliesHeader);
 			
-			// Mark as read when viewing (both your own replies and others' replies)
-			if (reply.isUnread()) {
-				reply.markAsRead();
-				// Save read status to database
-				ModelStudentHome.saveReplyToDatabase(reply);
+			// Create scrollable container for replies
+			ScrollPane repliesScrollPane = new ScrollPane();
+			VBox repliesContainer = new VBox(10);
+			repliesContainer.setPadding(new Insets(5));
+			for (Reply reply : replyList) {
+				// Create reply card
+				VBox replyCard = new VBox(5);
+				replyCard.setStyle("-fx-border-color: #e0e0e0; -fx-border-width: 1; -fx-padding: 10; -fx-background-color: #ffffff;");
+				
+				// Reply header
+				HBox replyHeader = new HBox(10);
+				Label replyAuthor = new Label(reply.getAuthorUsername());
+				replyAuthor.setStyle("-fx-font-weight: bold; -fx-font-size: 12;");
+				
+				Label replyDate = new Label(reply.getFormattedCreatedAt());
+				replyDate.setStyle("-fx-font-size: 11; -fx-text-fill: #666666;");
+				if (reply.isUnread()) {
+					Label unreadLabel = new Label("[UNREAD]");
+					unreadLabel.setStyle("-fx-font-size: 11; -fx-text-fill: #ff6b6b; -fx-font-weight: bold;");
+					replyHeader.getChildren().addAll(replyAuthor, replyDate, unreadLabel);
+				} else {
+					replyHeader.getChildren().addAll(replyAuthor, replyDate);
+				}
+				
+				// Reply body
+				Label replyBody = new Label(reply.getDisplayBody());
+				replyBody.setWrapText(true);
+				
+				// Reply action buttons
+				HBox replyButtonBox = new HBox(10);
+				Button editReplyBtn = new Button("Edit");
+				editReplyBtn.setStyle("-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-size: 11;");
+				editReplyBtn.setOnAction(e -> editReply(reply.getReplyId()));
+				editReplyBtn.setDisable(!reply.canEdit(currentUsername));
+				
+				Button deleteReplyBtn = new Button("Delete");
+				deleteReplyBtn.setStyle("-fx-background-color: #f44336; -fx-text-fill: white; -fx-font-size: 11;");
+				deleteReplyBtn.setOnAction(e -> deleteReply(reply.getReplyId()));
+				deleteReplyBtn.setDisable(!reply.canDelete(currentUsername));
+				
+				replyButtonBox.getChildren().addAll(editReplyBtn, deleteReplyBtn);
+				
+				replyCard.getChildren().addAll(replyHeader, replyBody, replyButtonBox);
+				repliesContainer.getChildren().add(replyCard);
+				
+				// Mark as read when viewing
+				if (reply.isUnread()) {
+					reply.markAsRead();
+					ModelStudentHome.saveReplyToDatabase(reply);
+				}
 			}
+			
+			repliesScrollPane.setContent(repliesContainer);
+			repliesScrollPane.setPrefSize(800, 300);
+			repliesScrollPane.setFitToWidth(true);
+			mainContainer.getChildren().add(repliesScrollPane);
+		} else {
+			Label noRepliesLabel = new Label("No replies yet.");
+			noRepliesLabel.setStyle("-fx-font-style: italic; -fx-text-fill: #666666;");
+			mainContainer.getChildren().add(noRepliesLabel);
 		}
-	}
 		
-		TextArea textArea = new TextArea(sb.toString());
-		textArea.setEditable(false);
-		textArea.setWrapText(true);
-		textArea.setPrefRowCount(25);
-		textArea.setPrefColumnCount(70);
+		// Create scrollable container for the entire content
+		ScrollPane mainScrollPane = new ScrollPane();
+		mainScrollPane.setContent(mainContainer);
+		mainScrollPane.setPrefSize(850, 600);
+		mainScrollPane.setFitToWidth(true);
 		
-		Dialog<ButtonType> dialog = new Dialog<>();
+		Dialog<Void> dialog = new Dialog<>();
 		dialog.setTitle("Post Details");
 		dialog.setHeaderText("Post ID: " + postId);
-		dialog.getDialogPane().setContent(textArea);
+		dialog.getDialogPane().setContent(mainScrollPane);
 		
-		// Add action buttons
-		ButtonType editPostBtn = new ButtonType("Edit Post", ButtonBar.ButtonData.OTHER);
-		ButtonType deletePostBtn = new ButtonType("Delete Post", ButtonBar.ButtonData.OTHER);
-		ButtonType replyBtn = new ButtonType("Add Reply", ButtonBar.ButtonData.OTHER);
-		ButtonType editReplyBtn = new ButtonType("Edit Reply", ButtonBar.ButtonData.OTHER);
-		ButtonType deleteReplyBtn = new ButtonType("Delete Reply", ButtonBar.ButtonData.OTHER);
 		ButtonType closeBtn = new ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE);
-		
-		dialog.getDialogPane().getButtonTypes().addAll(editPostBtn, deletePostBtn, replyBtn, 
-				editReplyBtn, deleteReplyBtn, closeBtn);
-		
-		Optional<ButtonType> result = dialog.showAndWait();
-		if (result.isPresent()) {
-			if (result.get() == editPostBtn) {
-				editPost(postId);
-			} else if (result.get() == deletePostBtn) {
-				deletePost(postId);
-			} else if (result.get() == replyBtn) {
-				createReply(postId);
-			} else if (result.get() == editReplyBtn) {
-				editReply();
-			} else if (result.get() == deleteReplyBtn) {
-				deleteReply();
-			}
-		}
+		dialog.getDialogPane().getButtonTypes().add(closeBtn);
+		dialog.showAndWait();
 	}
 	
 	
@@ -546,22 +623,10 @@ public class ControllerStudentHome {
 	 * <p> Description: Edits an existing reply.</p>
 	 * 
 	 */
-	private static void editReply() {
+	private static void editReply(String replyId) {
 		ReplyCollection replies = ModelStudentHome.getReplyCollection();
 		String currentUsername = ViewStudentHome.theUser.getUserName();
 		
-		// Prompt for reply ID
-		TextInputDialog idDialog = new TextInputDialog();
-		idDialog.setTitle("Edit Reply");
-		idDialog.setHeaderText("Enter the Reply ID to edit");
-		idDialog.setContentText("Reply ID:");
-		
-		Optional<String> idResult = idDialog.showAndWait();
-		if (!idResult.isPresent() || idResult.get().trim().isEmpty()) {
-			return;
-		}
-		
-		String replyId = idResult.get().trim();
 		Reply reply = replies.getReplyById(replyId);
 		
 		if (reply == null) {
@@ -633,22 +698,10 @@ public class ControllerStudentHome {
 	 * <p> Description: Deletes a reply after confirmation.</p>
 	 * 
 	 */
-	private static void deleteReply() {
+	private static void deleteReply(String replyId) {
 		ReplyCollection replies = ModelStudentHome.getReplyCollection();
 		String currentUsername = ViewStudentHome.theUser.getUserName();
 		
-		// Prompt for reply ID
-		TextInputDialog idDialog = new TextInputDialog();
-		idDialog.setTitle("Delete Reply");
-		idDialog.setHeaderText("Enter the Reply ID to delete");
-		idDialog.setContentText("Reply ID:");
-		
-		Optional<String> idResult = idDialog.showAndWait();
-		if (!idResult.isPresent() || idResult.get().trim().isEmpty()) {
-			return;
-		}
-		
-		String replyId = idResult.get().trim();
 		Reply reply = replies.getReplyById(replyId);
 		
 		if (reply == null) {
