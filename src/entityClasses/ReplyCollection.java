@@ -6,15 +6,19 @@ import java.util.stream.Collectors;
 /*******
  * <p> Title: ReplyCollection Class </p>
  * 
- * <p> Description: This ReplyCollection class manages a collection of Reply objects. It provides
- * methods for CRUD operations, filtering, and managing replies according to the requirements
- * specified in the document.</p>
+ * <p> Description: The ReplyCollection class manages all Reply objects created in the discussion system. 
+ * It serves as a container and controller for reply entities, enabling Create, Read, Update, and Delete 
+ * (CRUD) operations as well as filtering and tracking unread messages. </p>
+ * 
+ * <p> The ReplyCollection class supports the student and staff user stories that involve replying to posts, 
+ * reading and managing replies, viewing unread messages, and maintaining discussion integrity through 
+ * validation and access control. </p>
  * 
  * <p> Copyright: Joseph © 2025 </p>
  * 
- * @author Joseph
+ * @author Joseph and Vrishik
  * 
- * @version 1.00		2025-01-16 Initial version
+ * @version 2.00		2025-10-19 TP2 Updated Javadoc Version
  */ 
 
 public class ReplyCollection {
@@ -22,13 +26,23 @@ public class ReplyCollection {
     /*
      * These are the private attributes for this collection
      */
+	
+	/** 
+     * A mapping of reply IDs to Reply objects.
+     * Provides quick access and ensures each reply has a unique identifier.
+     */
     private Map<String, Reply> replies;
+    
+    /** 
+     * Counter used to generate sequential unique reply IDs.
+     */
     private int nextReplyId;
     
     /*****
      * <p> Method: ReplyCollection() </p>
      * 
-     * <p> Description: This constructor initializes an empty collection of replies. </p>
+     * <p> Description: Constructs an empty collection of replies. 
+     * Initializes the internal map and sets the starting ID counter. </p>
      */
     public ReplyCollection() {
         this.replies = new HashMap<>();
@@ -36,16 +50,15 @@ public class ReplyCollection {
     }
 
     /*****
-     * <p> Method: String createReply(String body, String authorUsername, String parentPostId) </p>
+     * <p> Method: createReply(String body, String authorUsername, String parentPostId) </p>
      * 
-     * <p> Description: Creates a new reply with validation. </p>
+     * <p> Description: Creates and validates a new reply before adding it to the collection. 
+     * Supports the student feature that allows posting replies to existing discussion posts. </p>
      * 
-     * @param body the body content of the reply
+     * @param body the reply content text
      * @param authorUsername the username of the reply author
-     * @param parentPostId the ID of the post this reply belongs to
-     * 
-     * @return the reply ID if successful, or an error message if validation fails
-     * 
+     * @param parentPostId the ID of the parent post being replied to
+     * @return the reply ID if successful, or a descriptive error message if validation fails
      */
     public String createReply(String body, String authorUsername, String parentPostId) {
         Reply newReply = new Reply(generateReplyId(), body, authorUsername, parentPostId);
@@ -60,12 +73,12 @@ public class ReplyCollection {
     }
 
     /*****
-     * <p> Method: void addReply(Reply reply) </p>
+     * <p> Method: addReply(Reply reply) </p>
      * 
-     * <p> Description: Adds an existing reply to the collection (used when loading from database). </p>
+     * <p> Description: Adds an existing reply to the collection, typically used when loading 
+     * replies from a database or saved file. Automatically adjusts the ID counter if needed. </p>
      * 
-     * @param reply the reply to add
-     * 
+     * @param reply the Reply object to add
      */
     public void addReply(Reply reply) {
         replies.put(reply.getReplyId(), reply);
@@ -81,26 +94,25 @@ public class ReplyCollection {
     }
 
     /*****
-     * <p> Method: List<Reply> getAllReplies() </p>
+     * <p> Method: getAllReplies() </p>
      * 
-     * <p> Description: Returns all replies in the collection. </p>
+     * <p> Description: Returns all replies in the collection, including deleted ones. 
+     * Supports staff review and debugging features. </p>
      * 
-     * @return list of all replies
-     * 
+     * @return a list of all Reply objects
      */
     public List<Reply> getAllReplies() {
         return new ArrayList<>(replies.values());
     }
 
     /*****
-     * <p> Method: List<Reply> getRepliesForPost(String postId) </p>
+     * <p> Method: getRepliesForPost(String postId) </p>
      * 
-     * <p> Description: Returns all replies for a specific post. </p>
+     * <p> Description: Retrieves all replies linked to a specific post. 
+     * Supports student and staff viewing of discussion threads. </p>
      * 
      * @param postId the ID of the parent post
-     * 
-     * @return list of replies for the post
-     * 
+     * @return a list of replies for the given post, ordered from oldest to newest
      */
     public List<Reply> getRepliesForPost(String postId) {
         return replies.values().stream()
@@ -110,15 +122,14 @@ public class ReplyCollection {
     }
 
     /*****
-     * <p> Method: List<Reply> getRepliesForPost(String postId, boolean unreadOnly) </p>
+     * <p> Method: getRepliesForPost(String postId, boolean unreadOnly) </p>
      * 
-     * <p> Description: Returns replies for a specific post, optionally filtered by read status. </p>
+     * <p> Description: Retrieves all replies for a specific post, optionally filtering 
+     * by unread status. Supports the feature that allows users to focus only on unread replies. </p>
      * 
      * @param postId the ID of the parent post
-     * @param unreadOnly if true, only return unread replies
-     * 
-     * @return list of replies for the post
-     * 
+     * @param unreadOnly true to return only unread replies; false to return all
+     * @return a list of replies matching the given filters
      */
     public List<Reply> getRepliesForPost(String postId, boolean unreadOnly) {
         return replies.values().stream()
@@ -129,14 +140,13 @@ public class ReplyCollection {
     }
 
     /*****
-     * <p> Method: List<Reply> getRepliesByAuthor(String authorUsername) </p>
+     * <p> Method: getRepliesByAuthor(String authorUsername) </p>
      * 
-     * <p> Description: Returns all replies by a specific author. </p>
+     * <p> Description: Retrieves all replies authored by the specified user. 
+     * Supports the student feature that allows viewing one’s own replies. </p>
      * 
      * @param authorUsername the username of the author
-     * 
-     * @return list of replies by the author
-     * 
+     * @return a list of replies created by that author, newest first
      */
     public List<Reply> getRepliesByAuthor(String authorUsername) {
         return replies.values().stream()
@@ -146,15 +156,14 @@ public class ReplyCollection {
     }
 
     /*****
-     * <p> Method: List<Reply> getUnreadRepliesForPost(String postId, String currentUsername) </p>
+     * <p> Method: getUnreadRepliesForPost(String postId, String currentUsername) </p>
      * 
-     * <p> Description: Returns unread replies for a specific post for the current user. </p>
+     * <p> Description: Retrieves all unread replies for a given post that were written by 
+     * other users. Supports the student feature that helps track unread messages in discussions. </p>
      * 
      * @param postId the ID of the parent post
      * @param currentUsername the username of the current user
-     * 
-     * @return list of unread replies for the post
-     * 
+     * @return a list of unread replies for that post
      */
     public List<Reply> getUnreadRepliesForPost(String postId, String currentUsername) {
         return replies.values().stream()
@@ -166,14 +175,12 @@ public class ReplyCollection {
     }
 
     /*****
-     * <p> Method: int getReplyCountForPost(String postId) </p>
+     * <p> Method: getReplyCountForPost(String postId) </p>
      * 
-     * <p> Description: Returns the number of replies for a specific post. </p>
+     * <p> Description: Returns the total number of replies associated with a specific post. </p>
      * 
-     * @param postId the ID of the parent post
-     * 
-     * @return the number of replies
-     * 
+     * @param postId the parent post ID
+     * @return the number of replies for that post
      */
     public int getReplyCountForPost(String postId) {
         return (int) replies.values().stream()
@@ -182,31 +189,28 @@ public class ReplyCollection {
     }
 
     /*****
-     * <p> Method: int getUnreadReplyCountForPost(String postId, String currentUsername) </p>
+     * <p> Method: getUnreadReplyCountForPost(String postId, String currentUsername) </p>
      * 
-     * <p> Description: Returns the number of unread replies for a specific post. </p>
+     * <p> Description: Returns the number of unread replies for a post written by other users. </p>
      * 
-     * @param postId the ID of the parent post
-     * @param currentUsername the username of the current user
-     * 
-     * @return the number of unread replies
-     * 
+     * @param postId the parent post ID
+     * @param currentUsername the logged-in user’s username
+     * @return the count of unread replies
      */
     public int getUnreadReplyCountForPost(String postId, String currentUsername) {
         return getUnreadRepliesForPost(postId, currentUsername).size();
     }
 
     /*****
-     * <p> Method: String updateReply(String replyId, String newBody, String currentUsername) </p>
+     * <p> Method: updateReply(String replyId, String newBody, String currentUsername) </p>
      * 
-     * <p> Description: Updates an existing reply with validation. </p>
+     * <p> Description: Updates the text of an existing reply after validation and permission checks. 
+     * Supports the student feature that allows editing one’s own replies. </p>
      * 
      * @param replyId the ID of the reply to update
-     * @param newBody the new body content
-     * @param currentUsername the username of the current user
-     * 
-     * @return empty string if successful, error message if failed
-     * 
+     * @param newBody the new body text
+     * @param currentUsername the username of the user requesting the edit
+     * @return an empty string if successful, or an error message if validation fails
      */
     public String updateReply(String replyId, String newBody, String currentUsername) {
         Reply reply = replies.get(replyId);
@@ -232,15 +236,14 @@ public class ReplyCollection {
     }
 
     /*****
-     * <p> Method: String deleteReply(String replyId, String currentUsername) </p>
+     * <p> Method: deleteReply(String replyId, String currentUsername) </p>
      * 
-     * <p> Description: Marks a reply as deleted with confirmation. </p>
+     * <p> Description: Marks a reply as deleted after verifying ownership. 
+     * Supports the student feature that allows removing one’s own replies. </p>
      * 
      * @param replyId the ID of the reply to delete
-     * @param currentUsername the username of the current user
-     * 
-     * @return empty string if successful, error message if failed
-     * 
+     * @param currentUsername the username of the user requesting deletion
+     * @return an empty string if successful, or an error message if not permitted
      */
     public String deleteReply(String replyId, String currentUsername) {
         Reply reply = replies.get(replyId);
@@ -258,41 +261,37 @@ public class ReplyCollection {
     }
 
     /*****
-     * <p> Method: Reply getReplyById(String replyId) </p>
+     * <p> Method: getReplyById(String replyId) </p>
      * 
-     * <p> Description: Retrieves a reply by its ID. </p>
+     * <p> Description: Retrieves a reply object by its unique ID. </p>
      * 
-     * @param replyId the ID of the reply
-     * 
-     * @return the reply if found, null otherwise
-     * 
+     * @param replyId the reply’s unique ID
+     * @return the corresponding Reply object, or null if not found
      */
     public Reply getReplyById(String replyId) {
         return replies.get(replyId);
     }
 
     /*****
-     * <p> Method: boolean replyExists(String replyId) </p>
+     * <p> Method: replyExists(String replyId) </p>
      * 
-     * <p> Description: Checks if a reply exists. </p>
+     * <p> Description: Determines whether a reply with the specified ID exists in the collection. </p>
      * 
-     * @param replyId the ID of the reply
-     * 
-     * @return true if the reply exists, false otherwise
-     * 
+     * @param replyId the reply ID to check
+     * @return true if the reply exists; false otherwise
      */
     public boolean replyExists(String replyId) {
         return replies.containsKey(replyId);
     }
 
     /*****
-     * <p> Method: void markRepliesAsRead(String postId, String currentUsername) </p>
+     * <p> Method: markRepliesAsRead(String postId, String currentUsername) </p>
      * 
-     * <p> Description: Marks all replies for a post as read for the current user. </p>
+     * <p> Description: Marks all replies for a given post as read for the specified user. 
+     * Supports the staff and student feature that tracks unread message indicators. </p>
      * 
-     * @param postId the ID of the parent post
-     * @param currentUsername the username of the current user
-     * 
+     * @param postId the parent post ID
+     * @param currentUsername the user marking replies as read
      */
     public void markRepliesAsRead(String postId, String currentUsername) {
         replies.values().stream()
@@ -302,12 +301,11 @@ public class ReplyCollection {
     }
 
     /*****
-     * <p> Method: void markReplyAsRead(String replyId) </p>
+     * <p> Method: markReplyAsRead(String replyId) </p>
      * 
      * <p> Description: Marks a specific reply as read. </p>
      * 
-     * @param replyId the ID of the reply
-     * 
+     * @param replyId the ID of the reply to mark as read
      */
     public void markReplyAsRead(String replyId) {
         Reply reply = replies.get(replyId);
@@ -317,24 +315,22 @@ public class ReplyCollection {
     }
 
     /*****
-     * <p> Method: int getReplyCount() </p>
+     * <p> Method: getReplyCount() </p>
      * 
-     * <p> Description: Returns the total number of replies in the collection. </p>
+     * <p> Description: Returns the total number of replies stored in the collection. </p>
      * 
-     * @return the number of replies
-     * 
+     * @return the total reply count
      */
     public int getReplyCount() {
         return replies.size();
     }
 
     /*****
-     * <p> Method: int getActiveReplyCount() </p>
+     * <p> Method: getActiveReplyCount() </p>
      * 
-     * <p> Description: Returns the number of non-deleted replies in the collection. </p>
+     * <p> Description: Returns the number of replies that are not marked as deleted. </p>
      * 
-     * @return the number of active replies
-     * 
+     * @return the count of active (non-deleted) replies
      */
     public int getActiveReplyCount() {
         return (int) replies.values().stream()
@@ -343,12 +339,12 @@ public class ReplyCollection {
     }
 
     /*****
-     * <p> Method: String generateReplyId() </p>
+     * <p> Method: generateReplyId() </p>
      * 
-     * <p> Description: Generates a unique reply ID. </p>
+     * <p> Description: Generates a unique reply ID using the format "REPLY_n". 
+     * Increments the ID counter to prevent duplication. </p>
      * 
-     * @return a unique reply ID
-     * 
+     * @return the generated reply ID string
      */
     private String generateReplyId() {
         String replyId = "REPLY_" + nextReplyId;
@@ -357,14 +353,13 @@ public class ReplyCollection {
     }
 
     /*****
-     * <p> Method: List<Reply> getRecentReplies(int count) </p>
+     * <p> Method: getRecentReplies(int count) </p>
      * 
-     * <p> Description: Returns the most recent replies. </p>
+     * <p> Description: Retrieves the most recent replies based on creation time. 
+     * Supports dashboards and “Recent Activity” views. </p>
      * 
      * @param count the number of recent replies to return
-     * 
-     * @return list of recent replies
-     * 
+     * @return a list of recent Reply objects
      */
     public List<Reply> getRecentReplies(int count) {
         return replies.values().stream()
@@ -375,12 +370,12 @@ public class ReplyCollection {
     }
 
     /*****
-     * <p> Method: Map<String, Integer> getReplyCountsByPost() </p>
+     * <p> Method: getReplyCountsByPost() </p>
      * 
-     * <p> Description: Returns a map of post IDs to their reply counts. </p>
+     * <p> Description: Generates a map of post IDs to their corresponding active reply counts. 
+     * Supports staff analytics and dashboard statistics. </p>
      * 
-     * @return map of post IDs to reply counts
-     * 
+     * @return a map pairing post IDs with their reply counts
      */
     public Map<String, Integer> getReplyCountsByPost() {
         Map<String, Integer> replyCounts = new HashMap<>();

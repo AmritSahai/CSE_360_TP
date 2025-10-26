@@ -6,29 +6,44 @@ import java.util.stream.Collectors;
 /*******
  * <p> Title: PostCollection Class </p>
  * 
- * <p> Description: This PostCollection class manages a collection of Post objects. It provides
- * methods for CRUD operations, searching, filtering, and managing posts according to the
- * requirements specified in the document.</p>
+ * <p> Description: The PostCollection class manages all Post objects created within the system. 
+ * It acts as both container and controller for post entities, enabling Create, Read, Update, and 
+ * Delete (CRUD) operations as well as search and filtering capabilities. </p>
+ * 
+ * <p> The PostCollection class supports the student user stories that involve viewing discussion threads, 
+ * creating new posts, searching for posts by keyword or thread, editing one’s own posts, and 
+ * deleting one’s own posts. It provides the main collection logic used by the student GUI 
+ * and maintains data integrity between multiple Post objects. </p>
  * 
  * <p> Copyright: Joseph © 2025 </p>
  * 
- * @author Joseph
+ * @author Joseph and Vrishik
  * 
- * @version 1.00		2025-01-16 Initial version
+ * @version 2.00		2025-10-19 TP2 Updated Javadoc Version
  */ 
 
 public class PostCollection {
     
-    /*
+	/*
      * These are the private attributes for this collection
      */
+
+    /** 
+     * A mapping of post IDs to Post objects. 
+     * Provides efficient retrieval and ensures each post has a unique key.
+     */
     private Map<String, Post> posts;
+    
+    /** 
+     * Counter used to generate sequential unique post IDs.
+     */
     private int nextPostId;
     
     /*****
      * <p> Method: PostCollection() </p>
      * 
-     * <p> Description: This constructor initializes an empty collection of posts. </p>
+     * <p> Description: Constructs an empty collection of posts. 
+     * Initializes the internal map and sets the starting post ID counter. </p>
      */
     public PostCollection() {
         this.posts = new HashMap<>();
@@ -36,17 +51,17 @@ public class PostCollection {
     }
 
     /*****
-     * <p> Method: String createPost(String title, String body, String authorUsername, String thread) </p>
+     * <p> Method: createPost(String title, String body, String authorUsername, String thread) </p>
      * 
-     * <p> Description: Creates a new post with validation. </p>
+     * <p> Description: Creates and validates a new post. 
+     * Supports the student user story that allows users to write and submit new discussion posts. 
+     * Ensures that the input meets validation rules before adding the post to the collection. </p>
      * 
      * @param title the title of the post
      * @param body the body content of the post
      * @param authorUsername the username of the post author
      * @param thread the thread this post belongs to (can be null for default)
-     * 
      * @return the post ID if successful, or an error message if validation fails
-     * 
      */
     public String createPost(String title, String body, String authorUsername, String thread) {
         // Validate search input length
@@ -66,12 +81,12 @@ public class PostCollection {
     }
 
     /*****
-     * <p> Method: void addPost(Post post) </p>
+     * <p> Method: addPost(Post post) </p>
      * 
-     * <p> Description: Adds an existing post to the collection (used when loading from database). </p>
+     * <p> Description: Adds an existing post object to the collection, typically used when loading 
+     * saved data from a database or file. Updates the ID counter if necessary. </p>
      * 
-     * @param post the post to add
-     * 
+     * @param post the Post object to add
      */
     public void addPost(Post post) {
         posts.put(post.getPostId(), post);
@@ -87,27 +102,26 @@ public class PostCollection {
     }
 
     /*****
-     * <p> Method: List<Post> getAllPosts() </p>
+     * <p> Method: getAllPosts() </p>
      * 
-     * <p> Description: Returns all posts in the collection. </p>
+     * <p> Description: Retrieves a list of all posts in the system, regardless of thread or author. 
+     * Supports features like displaying all discussions for staff or admins. </p>
      * 
-     * @return list of all posts
-     * 
+     * @return a list of all Post objects
      */
     public List<Post> getAllPosts() {
         return new ArrayList<>(posts.values());
     }
 
     /*****
-     * <p> Method: List<Post> searchPosts(String keyword, String threadFilter) </p>
+     * <p> Method: searchPosts(String keyword, String threadFilter) </p>
      * 
-     * <p> Description: Searches for posts matching the keyword and thread filter. </p>
+     * <p> Description: Searches for posts containing the keyword and/or matching the selected thread. 
+     * Supports the student user story that allows keyword searching within the discussion forum. </p>
      * 
-     * @param keyword the search keyword (can be null or empty for all posts)
+     * @param keyword the word or phrase to search for
      * @param threadFilter the thread to filter by (can be "All" for all threads)
-     * 
-     * @return list of matching posts
-     * 
+     * @return list of posts that match the search and filter criteria
      */
     public List<Post> searchPosts(String keyword, String threadFilter) {
         // Validate search input length
@@ -129,14 +143,13 @@ public class PostCollection {
     }
 
     /*****
-     * <p> Method: List<Post> getPostsByAuthor(String authorUsername) </p>
+     * <p> Method: getPostsByAuthor(String authorUsername) </p>
      * 
-     * <p> Description: Returns all posts by a specific author. </p>
+     * <p> Description: Retrieves all posts written by a particular author, 
+     * supporting the student and staff features that allow viewing one’s own or another user’s posts. </p>
      * 
      * @param authorUsername the username of the author
-     * 
-     * @return list of posts by the author
-     * 
+     * @return list of posts created by the specified author
      */
     public List<Post> getPostsByAuthor(String authorUsername) {
         return posts.values().stream()
@@ -146,14 +159,13 @@ public class PostCollection {
     }
 
     /*****
-     * <p> Method: List<Post> getPostsByThread(String thread) </p>
+     * <p> Method: getPostsByThread(String thread) </p>
      * 
-     * <p> Description: Returns all posts in a specific thread. </p>
+     * <p> Description: Retrieves all posts that belong to a specific discussion thread. 
+     * Supports student and staff browsing features for organized thread-based discussions. </p>
      * 
-     * @param thread the thread name
-     * 
-     * @return list of posts in the thread
-     * 
+     * @param thread the name of the discussion thread
+     * @return a list of posts within the specified thread
      */
     public List<Post> getPostsByThread(String thread) {
         return posts.values().stream()
@@ -163,17 +175,16 @@ public class PostCollection {
     }
 
     /*****
-     * <p> Method: String updatePost(String postId, String newTitle, String newBody, String currentUsername) </p>
+     * <p> Method: updatePost(String postId, String newTitle, String newBody, String currentUsername) </p>
      * 
-     * <p> Description: Updates an existing post with validation. </p>
+     * <p> Description: Updates the title and body of an existing post after validating new input. 
+     * Supports the student feature that allows editing one’s own posts while enforcing permission checks. </p>
      * 
      * @param postId the ID of the post to update
-     * @param newTitle the new title
-     * @param newBody the new body content
-     * @param currentUsername the username of the current user
-     * 
-     * @return empty string if successful, error message if failed
-     * 
+     * @param newTitle the new post title
+     * @param newBody the new post body
+     * @param currentUsername the username of the user requesting the edit
+     * @return an empty string if successful, or a descriptive error message if validation fails
      */
     public String updatePost(String postId, String newTitle, String newBody, String currentUsername) {
         Post post = posts.get(postId);
@@ -199,15 +210,15 @@ public class PostCollection {
     }
 
     /*****
-     * <p> Method: String deletePost(String postId, String currentUsername) </p>
+     * <p> Method: deletePost(String postId, String currentUsername) </p>
      * 
-     * <p> Description: Marks a post as deleted with confirmation. </p>
+     * <p> Description: Marks a post as deleted without permanently removing it from the collection. 
+     * Supports the student feature that allows removing one’s own posts while preserving data 
+     * for audit and staff review. </p>
      * 
      * @param postId the ID of the post to delete
-     * @param currentUsername the username of the current user
-     * 
-     * @return empty string if successful, error message if failed
-     * 
+     * @param currentUsername the username of the user requesting deletion
+     * @return an empty string if successful, or an error message if permission is denied
      */
     public String deletePost(String postId, String currentUsername) {
         Post post = posts.get(postId);
@@ -225,40 +236,36 @@ public class PostCollection {
     }
 
     /*****
-     * <p> Method: Post getPostById(String postId) </p>
+     * <p> Method: getPostById(String postId) </p>
      * 
-     * <p> Description: Retrieves a post by its ID. </p>
+     * <p> Description: Retrieves a single Post object by its unique ID. </p>
      * 
      * @param postId the ID of the post
-     * 
-     * @return the post if found, null otherwise
-     * 
+     * @return the Post object if found, or null otherwise
      */
     public Post getPostById(String postId) {
         return posts.get(postId);
     }
 
     /*****
-     * <p> Method: boolean postExists(String postId) </p>
+     * <p> Method: postExists(String postId) </p>
      * 
-     * <p> Description: Checks if a post exists. </p>
+     * <p> Description: Determines whether a post with the specified ID exists in the collection. </p>
      * 
-     * @param postId the ID of the post
-     * 
+     * @param postId the ID to check
      * @return true if the post exists, false otherwise
-     * 
      */
     public boolean postExists(String postId) {
         return posts.containsKey(postId);
     }
 
     /*****
-     * <p> Method: Set<String> getAllThreads() </p>
+     * <p> Method: getAllThreads() </p>
      * 
-     * <p> Description: Returns all unique thread names in the collection. </p>
+     * <p> Description: Returns a set of all unique thread names found among posts in the collection. 
+     * Supports GUI components that display thread selection lists. </p>
      * 
-     * @return set of all thread names
-     * 
+     * @return a set of unique thread names
      */
     public Set<String> getAllThreads() {
         return posts.values().stream()
@@ -267,24 +274,23 @@ public class PostCollection {
     }
 
     /*****
-     * <p> Method: int getPostCount() </p>
+     * <p> Method: getPostCount() </p>
      * 
-     * <p> Description: Returns the total number of posts in the collection. </p>
+     * <p> Description: Returns the total number of posts in the collection, including deleted ones. </p>
      * 
-     * @return the number of posts
-     * 
+     * @return the total count of posts
      */
     public int getPostCount() {
         return posts.size();
     }
 
     /*****
-     * <p> Method: int getActivePostCount() </p>
+     * <p> Method: getActivePostCount() </p>
      * 
-     * <p> Description: Returns the number of non-deleted posts in the collection. </p>
+     * <p> Description: Returns the number of posts that have not been marked as deleted. 
+     * Useful for dashboards and staff analytics. </p>
      * 
-     * @return the number of active posts
-     * 
+     * @return the number of active (non-deleted) posts
      */
     public int getActivePostCount() {
         return (int) posts.values().stream()
@@ -293,12 +299,12 @@ public class PostCollection {
     }
 
     /*****
-     * <p> Method: String generatePostId() </p>
+     * <p> Method: generatePostId() </p>
      * 
-     * <p> Description: Generates a unique post ID. </p>
+     * <p> Description: Generates a unique post ID using the format "POST_n". 
+     * Increments the counter after each use to prevent ID duplication. </p>
      * 
-     * @return a unique post ID
-     * 
+     * @return a unique post ID string
      */
     private String generatePostId() {
         String postId = "POST_" + nextPostId;
@@ -307,14 +313,13 @@ public class PostCollection {
     }
 
     /*****
-     * <p> Method: List<Post> getRecentPosts(int count) </p>
+     * <p> Method: getRecentPosts(int count) </p>
      * 
-     * <p> Description: Returns the most recent posts. </p>
+     * <p> Description: Retrieves a list of the most recently created posts, sorted in descending order. 
+     * Supports home-page and dashboard views showing the latest activity. </p>
      * 
-     * @param count the number of recent posts to return
-     * 
-     * @return list of recent posts
-     * 
+     * @param count the number of posts to retrieve
+     * @return a list of recent posts up to the specified count
      */
     public List<Post> getRecentPosts(int count) {
         return posts.values().stream()

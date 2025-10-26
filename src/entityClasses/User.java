@@ -18,15 +18,35 @@ public class User {
 	/*
 	 * These are the private attributes for this entity object
 	 */
+	
+	/** The user’s login name used for authentication. */
     private String userName;
+    
+    /** The user’s account password. */
     private String password;
+    
+    /** The user’s first (legal) name. */
     private String firstName;
+    
+    /** The user’s middle name (if provided). */
     private String middleName;
+    
+    /** The user’s last (family) name. */
     private String lastName;
+    
+    /** The user’s preferred first name used for display. */
     private String preferredFirstName;
+    
+    /** The user’s email address for notifications and contact. */
     private String emailAddress;
+    
+    /** Boolean indicating whether this user has the Admin role. */
     private boolean adminRole;
+    
+    /** Boolean indicating whether this user has the Student role. */
     private boolean Student;
+    
+    /** Boolean indicating whether this user has the Staff role. */
     private boolean Staff;
     
     
@@ -41,21 +61,22 @@ public class User {
 
     
     /*****
-     * <p> Method: User(String userName, String password, boolean r1, boolean r2,
-     * 		boolean r3, boolean r4, boolean r5) </p>
+     * <p> Method: User(String userName, String password, String fn, String mn, String ln, 
+     * String pfn, String ea, boolean r1, boolean r2, boolean r3) </p>
      * 
-     * <p> Description: This constructor is used to establish user entity objects. </p>
+     * <p> Description: Constructs a new User object with full profile information and role assignments. 
+     * Supports the staff and admin features that involve user creation and management. </p>
      * 
-     * @param userName specifies the account userName for this user
-     * 
-     * @param password specifies the account password for this user
-     * 
-     * @param r1 specifies the the Admin attribute (TRUE or FALSE) for this user
-     * 
-     * @param r2 specifies the the Student attribute (TRUE or FALSE) for this user
-     * 
-     * @param r3 specifies the the Reviewer attribute (TRUE or FALSE) for this user
-     * 
+     * @param userName the unique username for this user
+     * @param password the user’s password
+     * @param fn the user’s first name
+     * @param mn the user’s middle name
+     * @param ln the user’s last name
+     * @param pfn the user’s preferred first name
+     * @param ea the user’s email address
+     * @param r1 true if this user has the Admin role
+     * @param r2 true if this user has the Student role
+     * @param r3 true if this user has the Staff role
      */
     // Constructor to initialize a new User object with userName, password, and role.
     public User(String userName, String password, String fn, String mn, String ln, String pfn, 
@@ -197,13 +218,89 @@ public class User {
      */
     // Gets the current value of the Student role attribute.
     public String getEmailAddress() { return emailAddress; }
+    
 
+    /*****
+     * <p> Method: void setUserName(String s) </p>
+     * 
+     * <p> Description: This setter defines the UserName attribute. </p>
+     * 
+     * @param s is the user name string to assign to this user.
+     * 
+     */
+    // Sets the UserName for this user.
     public void setUserName(String s) { userName = s; }
+    
+    
+    /*****
+     * <p> Method: void setPassword(String s) </p>
+     * 
+     * <p> Description: This setter defines the Password attribute. </p>
+     * 
+     * @param s is the password string to assign to this user.
+     * 
+     */
+    // Sets the Password for this user.
     public void setPassword(String s) { password = s; }
+    
+    
+    /*****
+     * <p> Method: void setFirstName(String s) </p>
+     * 
+     * <p> Description: This setter defines the FirstName attribute. </p>
+     * 
+     * @param s is the first name string to assign to this user.
+     * 
+     */
+    // Sets the FirstName for this user.
     public void setFirstName(String s) { firstName = s; }
+    
+    
+    /*****
+     * <p> Method: void setMiddleName(String s) </p>
+     * 
+     * <p> Description: This setter defines the MiddleName attribute. </p>
+     * 
+     * @param s is the middle name string to assign to this user.
+     * 
+     */
+    // Sets the MiddleName for this user.
     public void setMiddleName(String s) { middleName = s; }
+    
+    
+    /*****
+     * <p> Method: void setLastName(String s) </p>
+     * 
+     * <p> Description: This setter defines the LastName attribute. </p>
+     * 
+     * @param s is the last name string to assign to this user.
+     * 
+     */
+    // Sets the LastName for this user.
     public void setLastName(String s) { lastName = s; }
+    
+    
+    /*****
+     * <p> Method: void setPreferredFirstName(String s) </p>
+     * 
+     * <p> Description: This setter defines the PreferredFirstName attribute. </p>
+     * 
+     * @param s is the preferred first name string to assign to this user.
+     * 
+     */
+    // Sets the PreferredFirstName for this user.
     public void setPreferredFirstName(String s) { preferredFirstName = s; }
+    
+    
+    /*****
+     * <p> Method: void setEmailAddress(String s) </p>
+     * 
+     * <p> Description: This setter defines the EmailAddress attribute. </p>
+     * 
+     * @param s is the email address string to assign to this user.
+     * 
+     */
+    // Sets the EmailAddress for this user.
     public void setEmailAddress(String s) { emailAddress = s; }
 
     
