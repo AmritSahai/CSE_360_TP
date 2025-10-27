@@ -14,17 +14,22 @@ import guiUserUpdate.ViewUserUpdate;
 
 
 /*******
- * <p> Title: GUIReviewerHomePage Class. </p>
+ * <p> Title: ViewStudentHome Class. </p>
  * 
- * <p> Description: The Java/FX-based Student Home Page.  The page is a stub for some role needed for
- * the application.  The widgets on this page are likely the minimum number and kind for other role
- * pages that may be needed.</p>
+ * <p> Description: The Student Home Page View. This class defines the JavaFX graphical
+ * interface elements displayed to the student user. It communicates with the
+ * ControllerStudentHome class to handle button clicks, menu actions, and other
+ * user interactions.</p>
+ * 
+ * <p>Supports features such as displaying posts and replies, creating and searching posts,
+ * updating account information, and logging out. This class provides the graphical layer
+ * through which students interact with all Student user functionalities.</p>
  * 
  * <p> Copyright: Lynn Robert Carter © 2025 </p>
  * 
- * @author Lynn Robert Carter
+ * @author Joseph and Vrishik
  * 
- * @version 1.00		2025-08-20 Initial version
+ * @version 2.00		2025-10-27 TP2 interface and documentation updates
  *  
  */
 
@@ -38,7 +43,10 @@ public class ViewStudentHome {
 	
 	// These are the application values required by the user interface
 	
+	/** The standard width for the Student Home window, retrieved from the main application. */
 	private static double width = applicationMain.FoundationsMain.WINDOW_WIDTH;
+	
+	/** The standard height for the Student Home window, retrieved from the main application. */
 	private static double height = applicationMain.FoundationsMain.WINDOW_HEIGHT;
 
 
@@ -72,19 +80,32 @@ public class ViewStudentHome {
 	// This is the end of the GUI objects for the page.
 	
 	// These attributes are used to configure the page and populate it with this user's information
-	private static ViewStudentHome theView;		// Used to determine if instantiation of the class
-												// is needed
+	
+	
+	/** Reference to the singleton instance of this View class. */
+	private static ViewStudentHome theView;		
+												
 
-	// Reference for the in-memory database so this package has access
+	/** Reference to the shared database instance from the main application. */
 	private static Database theDatabase = applicationMain.FoundationsMain.database;
 
-	protected static Stage theStage;			// The Stage that JavaFX has established for us	
-	protected static Pane theRootPane;			// The Pane that holds all the GUI widgets
-	protected static User theUser;				// The current logged in User
 	
-
-	private static Scene theViewStudentHomeScene;	// The shared Scene each invocation populates
-	protected static final int theRole = 2;		// Admin: 1; Student: 2; Staff: 3
+	/** Reference to the main Stage object used by JavaFX to render this GUI window. */
+	protected static Stage theStage;		
+	
+	
+	/** The root Pane that contains all GUI components for this page. */
+	protected static Pane theRootPane;
+	
+	
+	/** The User object representing the currently logged-in student. */
+	protected static User theUser;
+	
+	/** Shared Scene for displaying the Student Home GUI. */
+	private static Scene theViewStudentHomeScene;	
+	
+	/** The integer role identifier for Student users. */
+	protected static final int theRole = 2;	
 
 	/*-*******************************************************************************************
 
@@ -137,7 +158,7 @@ public class ViewStudentHome {
 	}
 	
 	/**********
-	 * <p> Method: ViewStudentHome() </p>
+	 * <p> Constructor: ViewStudentHome() </p>
 	 * 
 	 * <p> Description: This method initializes all the elements of the graphical user interface.
 	 * This method determines the location, size, font, color, and change and event handlers for
@@ -207,17 +228,22 @@ public class ViewStudentHome {
 
 	 */
 	
-	/**********
-	 * Private local method to initialize the standard fields for a label
-	 * 
-	 * @param l		The Label object to be initialized
-	 * @param ff	The font to be used
-	 * @param f		The size of the font to be used
-	 * @param w		The width of the Button
-	 * @param p		The alignment (e.g. left, centered, or right)
-	 * @param x		The location from the left edge (x axis)
-	 * @param y		The location from the top (y axis)
-	 */
+	/*******
+     * <p> Method: setupLabelUI(Label l, String ff, double f, double w, Pos p, double x, double y) </p>
+     *
+     * <p> Description: Helper method that initializes the standard formatting properties
+     * for a JavaFX Label. It sets the font family, size, alignment, width, and layout
+     * position to ensure consistent visual appearance across the Student interface. </p>
+     *
+     * @param l The Label object to be initialized.
+     * @param ff The font family name (e.g., "Arial" or "Dialog").
+     * @param f The font size to be applied.
+     * @param w The minimum width of the label.
+     * @param p The alignment for text positioning within the label.
+     * @param x The x-coordinate of the label’s placement.
+     * @param y The y-coordinate of the label’s placement.
+     *
+     */
 	private static void setupLabelUI(Label l, String ff, double f, double w, Pos p, double x, 
 			double y){
 		l.setFont(Font.font(ff, f));
@@ -228,17 +254,22 @@ public class ViewStudentHome {
 	}
 	
 	
-	/**********
-	 * Private local method to initialize the standard fields for a button
-	 * 
-	 * @param b		The Button object to be initialized
-	 * @param ff	The font to be used
-	 * @param f		The size of the font to be used
-	 * @param w		The width of the Button
-	 * @param p		The alignment (e.g. left, centered, or right)
-	 * @param x		The location from the left edge (x axis)
-	 * @param y		The location from the top (y axis)
-	 */
+	/*******
+     * <p> Method: setupButtonUI(Button b, String ff, double f, double w, Pos p, double x, double y) </p>
+     *
+     * <p> Description: Helper method that standardizes the appearance and layout of all
+     * JavaFX Button elements in the Student Home GUI. It applies consistent fonts,
+     * widths, alignment, and spatial positioning across the application. </p>
+     *
+     * @param b The Button object to be initialized.
+     * @param ff The font family name to use for button text.
+     * @param f The font size for button text.
+     * @param w The minimum width of the button.
+     * @param p The text alignment setting within the button.
+     * @param x The horizontal (x-axis) coordinate of the button.
+     * @param y The vertical (y-axis) coordinate of the button.
+     *
+     */
 	private static void setupButtonUI(Button b, String ff, double f, double w, Pos p, double x, 
 			double y){
 		b.setFont(Font.font(ff, f));

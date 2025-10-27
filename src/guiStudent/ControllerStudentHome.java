@@ -10,7 +10,41 @@ import entityClasses.Reply;
 import entityClasses.PostCollection;
 import entityClasses.ReplyCollection;
 
+
+/*******
+ * <p> Title: ControllerStudentHome Class. </p>
+ * 
+ * <p> Description: The Student Home Page Controller. This class manages all user interface
+ * actions for the Student Home page. It connects the View and Model layers in the
+ * Student MVC package and supports user interactions such as creating, editing,
+ * deleting, and searching posts and replies.</p>
+ * 
+ *<p>Supports features such as creating, searching, editing, deleting posts and replies,
+ * and navigating between GUI states. This controller coordinates all actions between the
+ * user interface and the underlying data model to implement the complete set of Student
+ * features.</p>
+ * 
+ * <p> Copyright: Lynn Robert Carter © 2025 </p>
+ * 
+ * @author Joseph and Vrishik
+ * 
+ * @version 2.00		2025-10-27 TP2 updates and Javadoc completion
+ *  
+ */
+
 public class ControllerStudentHome {
+	
+	
+	/*******
+     * <p> Constructor: ControllerStudentHome() </p>
+     *
+     * <p> Description: Private constructor to prevent instantiation of this class.
+     * All controller methods are static and operate directly on shared View and Model
+     * instances. </p>
+     */
+	private ControllerStudentHome() {
+		// Prevent instantiation
+	}
 
 	/*-*******************************************************************************************
 
@@ -42,7 +76,8 @@ public class ControllerStudentHome {
 	 * <p> Description: This method terminates the execution of the program.  It leaves the
 	 * database in a state where the normal login page will be displayed when the application is
 	 * restarted.</p>
-	 * 
+     * @throws SecurityException If the Java runtime environment prevents normal termination.
+     * 
 	 */	
 	protected static void performQuit() {
 		System.exit(0);
@@ -52,6 +87,7 @@ public class ControllerStudentHome {
 	 * <p> Method: createPost() </p>
 	 * 
 	 * <p> Description: Creates a new post with title, body, and thread assignment.</p>
+	 *  @throws IllegalStateException If post creation fails due to invalid state or database error.
 	 * 
 	 */
 	protected static void createPost() {
@@ -185,12 +221,18 @@ public class ControllerStudentHome {
 	}
 	
 	
-	/**********
-	 * <p> Method: displayPostList() </p>
-	 * 
-	 * <p> Description: Helper method to display a list of posts.</p>
-	 * 
-	 */
+	/*******
+     * <p> Method: displayPostList() </p>
+     *
+     * <p> Description: Displays a scrollable dialog containing a list of forum posts.
+     * Each post card includes its title, author, date, reply count, and management
+     * buttons for viewing, editing, or deleting the post. </p>
+     *
+     * @param postList The list of posts to display.
+     * @param replies The ReplyCollection used to retrieve reply data for each post.
+     * @param title The dialog window title to be shown.
+     *
+     */
 	private static void displayPostList(List<Post> postList, ReplyCollection replies, String title) {
 		String currentUsername = ViewStudentHome.theUser.getUserName();
 		
@@ -287,12 +329,17 @@ public class ControllerStudentHome {
 	}
 	
 	
-	/**********
-	 * <p> Method: viewPostDetails() </p>
-	 * 
-	 * <p> Description: Displays full post details with replies.</p>
-	 * 
-	 */
+	/*******
+     * <p> Method: viewPostDetails(String postId) </p>
+     *
+     * <p> Description: Displays a detailed view of a single post, including all replies
+     * and data such as thread name and edit date. Users can interact by editing,
+     * deleting, or replying within the dialog. </p>
+     *
+     * @param postId The unique identifier of the post being viewed.
+     * @throws IllegalArgumentException If no post is found with the given ID.
+     * 
+     */
 	private static void viewPostDetails(String postId) {
 		PostCollection posts = ModelStudentHome.getPostCollection();
 		ReplyCollection replies = ModelStudentHome.getReplyCollection();
@@ -459,12 +506,16 @@ public class ControllerStudentHome {
 	}
 	
 	
-	/**********
-	 * <p> Method: editPost() </p>
-	 * 
-	 * <p> Description: Edits an existing post.</p>
-	 * 
-	 */
+	/*******
+     * <p> Method: editPost(String postId) </p>
+     *
+     * <p> Description: Allows the post’s author to edit an existing post. Opens a dialog
+     * pre-filled with the current title and body, validates input, and updates the
+     * record if confirmed. </p>
+     *
+     * @param postId The unique ID of the post being edited.
+     * @throws SecurityException If a non-author attempts to edit another user’s post.
+     */
 	private static void editPost(String postId) {
 		PostCollection posts = ModelStudentHome.getPostCollection();
 		String currentUsername = ViewStudentHome.theUser.getUserName();
@@ -530,12 +581,16 @@ public class ControllerStudentHome {
 	}
 	
 	
-	/**********
-	 * <p> Method: deletePost() </p>
-	 * 
-	 * <p> Description: Deletes a post after confirmation.</p>
-	 * 
-	 */
+	/*******
+     * <p> Method: deletePost(String postId) </p>
+     *
+     * <p> Description: Deletes a post from the forum after user confirmation. The post
+     * remains visible to preserve reply integrity, but its content is replaced by a
+     * “deleted” placeholder. </p>
+     *
+     * @param postId The unique ID of the post to delete.
+     * @throws SecurityException If a non-author attempts to delete another user’s post.
+     */
 	private static void deletePost(String postId) {
 		PostCollection posts = ModelStudentHome.getPostCollection();
 		String currentUsername = ViewStudentHome.theUser.getUserName();
@@ -578,12 +633,15 @@ public class ControllerStudentHome {
 	}
 	
 	
-	/**********
-	 * <p> Method: createReply() </p>
-	 * 
-	 * <p> Description: Creates a reply to a post.</p>
-	 * 
-	 */
+	/*******
+     * <p> Method: createReply(String postId) </p>
+     *
+     * <p> Description: Prompts the user to add a reply to the specified post. The reply is
+     * saved to both in-memory collections and the database. </p>
+     *
+     * @param postId The ID of the post being replied to.
+     * 
+     */
 	private static void createReply(String postId) {
 		ReplyCollection replies = ModelStudentHome.getReplyCollection();
 		String currentUsername = ViewStudentHome.theUser.getUserName();
@@ -617,12 +675,15 @@ public class ControllerStudentHome {
 		}
 	}
 	
-	/**********
-	 * <p> Method: editReply() </p>
-	 * 
-	 * <p> Description: Edits an existing reply.</p>
-	 * 
-	 */
+	/*******
+     * <p> Method: editReply(String replyId) </p>
+     *
+     * <p> Description: Allows the author to edit one of their replies. Displays an input
+     * dialog preloaded with the existing text and validates edits before saving. </p>
+     *
+     * @param replyId The ID of the reply being edited.
+     * @throws SecurityException If a user attempts to edit a reply they do not own.
+     */
 	private static void editReply(String replyId) {
 		ReplyCollection replies = ModelStudentHome.getReplyCollection();
 		String currentUsername = ViewStudentHome.theUser.getUserName();
@@ -692,12 +753,15 @@ public class ControllerStudentHome {
 	}
 	
 	
-	/**********
-	 * <p> Method: deleteReply() </p>
-	 * 
-	 * <p> Description: Deletes a reply after confirmation.</p>
-	 * 
-	 */
+	/*******
+     * <p> Method: deleteReply(String replyId) </p>
+     *
+     * <p> Description: Deletes a reply after the user confirms the action. A deleted reply
+     * remains in the database for history tracking but is hidden from normal view. </p>
+     *
+     * @param replyId The ID of the reply being deleted.
+     * @throws SecurityException If a user attempts to delete a reply they do not own.
+     */
 	private static void deleteReply(String replyId) {
 		ReplyCollection replies = ModelStudentHome.getReplyCollection();
 		String currentUsername = ViewStudentHome.theUser.getUserName();
