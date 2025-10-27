@@ -54,27 +54,55 @@ public class ViewStudentHome {
 	
 	// GUI Area 1: It informs the user about the purpose of this page, whose account is being used,
 	// and a button to allow this user to update the account settings
+	
+	/** The title label displayed at the top of the Student Home page. */
 	protected static Label label_PageTitle = new Label();
+	
+	
+	/** The label displaying the current user's name and role. */
 	protected static Label label_UserDetails = new Label();
+	
+	/** Button allowing the user to open their account update page. */
 	protected static Button button_UpdateThisUser = new Button("Account Update");
 	
-	// This is a separator and it is used to partition the GUI for various tasks
+	
+	/** Horizontal line separating the header section from the forum section. */
 	protected static Line line_Separator1 = new Line(20, 95, width-20, 95);
 
 	// GUI Area 2: Forum functionality widgets
-		protected static Label label_ForumSection = new Label("Forum");
-		protected static Button button_CreatePost = new Button("Create Post");
-		protected static Button button_SearchPosts = new Button("Search Posts");
-		protected static Button button_ViewMyPosts = new Button("My Posts");
-		protected static Button button_ViewAllPosts = new Button("View All Posts");
+	
+	/** Label heading for the forum section. */
+	protected static Label label_ForumSection = new Label("Forum");
+		
+	
+	/** Button for creating a new discussion post. */
+	protected static Button button_CreatePost = new Button("Create Post");
 	
 	
-	// This is a separator and it is used to partition the GUI for various tasks
+	/** Button for searching posts by keyword or topic. */
+	protected static Button button_SearchPosts = new Button("Search Posts");
+	
+	
+	/** Button for viewing posts created by the logged-in user. */
+	protected static Button button_ViewMyPosts = new Button("My Posts");
+	
+	
+	/** Button for viewing all posts in the discussion forum. */
+	protected static Button button_ViewAllPosts = new Button("View All Posts");
+	
+	
+	/** Horizontal line separating the forum section from the logout area. */
 	protected static Line line_Separator4 = new Line(20, 525, width-20,525);
 	
 	// GUI Area 3: This is last of the GUI areas.  It is used for quitting the application and for
 	// logging out.
+	
+	
+	/** Button for logging out of the Student Home interface. */
 	protected static Button button_Logout = new Button("Logout");
+	
+	
+	/** Button for quitting the entire application. */
 	protected static Button button_Quit = new Button("Quit");
 
 	// This is the end of the GUI objects for the page.
@@ -161,12 +189,10 @@ public class ViewStudentHome {
 	 * <p> Constructor: ViewStudentHome() </p>
 	 * 
 	 * <p> Description: This method initializes all the elements of the graphical user interface.
-	 * This method determines the location, size, font, color, and change and event handlers for
-	 * each GUI object.</p>
+	 * It determines the location, size, font, color, and event handlers for each GUI object.</p>
 	 * 
-	 * This is a singleton and is only performed once.  Subsequent uses fill in the changeable
+	 * <p>This is a singleton and is only performed once. Subsequent uses fill in the changeable
 	 * fields using the displayStaffHome method.</p>
-	 * 
 	 */
 	private ViewStudentHome() {
 
