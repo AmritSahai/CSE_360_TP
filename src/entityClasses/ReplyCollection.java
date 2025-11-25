@@ -58,6 +58,30 @@ public class ReplyCollection {
         replies.put(newReply.getReplyId(), newReply);
         return newReply.getReplyId();
     }
+    
+    /*****
+     * <p> Method: String createFeedback(String body, String authorUsername, String parentPostId) </p>
+     * 
+     * <p> Description: Creates a new feedback reply (private feedback from staff) with validation. </p>
+     * 
+     * @param body the body content of the feedback
+     * @param authorUsername the username of the staff member providing feedback
+     * @param parentPostId the ID of the parent post
+     * 
+     * @return the reply ID if successful, or an error message if validation fails
+     * 
+     */
+    public String createFeedback(String body, String authorUsername, String parentPostId) {
+        Reply newReply = new Reply(generateReplyId(), body, authorUsername, parentPostId, true);
+        String validationError = newReply.validateReply();
+        
+        if (!validationError.isEmpty()) {
+            return validationError;
+        }
+        
+        replies.put(newReply.getReplyId(), newReply);
+        return newReply.getReplyId();
+    }
 
     /*****
      * <p> Method: void addReply(Reply reply) </p>
@@ -95,16 +119,38 @@ public class ReplyCollection {
     /*****
      * <p> Method: List<Reply> getRepliesForPost(String postId) </p>
      * 
-     * <p> Description: Returns all replies for a specific post. </p>
+     * <p> Description: Returns all replies for a specific post (excluding feedback). </p>
      * 
      * @param postId the ID of the parent post
      * 
-     * @return list of replies for the post
+     * @return list of replies for the post (non-feedback replies)
      * 
      */
     public List<Reply> getRepliesForPost(String postId) {
         return replies.values().stream()
             .filter(reply -> postId.equals(reply.getParentPostId()))
+            .filter(reply -> !reply.isFeedback()) // Exclude feedback from regular replies
+            .sorted((r1, r2) -> r1.getCreatedAt().compareTo(r2.getCreatedAt())) // Oldest first
+            .collect(Collectors.toList());
+    }
+    
+    /*****
+     * <p> Method: List<Reply> getFeedbackForPost(String postId, String currentUsername, String postAuthorUsername) </p>
+     * 
+     * <p> Description: Returns feedback replies for a specific post. Only visible to the post author and the feedback author. </p>
+     * 
+     * @param postId the ID of the parent post
+     * @param currentUsername the username of the current user viewing the post
+     * @param postAuthorUsername the username of the post author
+     * 
+     * @return list of feedback replies visible to the current user
+     * 
+     */
+    public List<Reply> getFeedbackForPost(String postId, String currentUsername, String postAuthorUsername) {
+        return replies.values().stream()
+            .filter(reply -> postId.equals(reply.getParentPostId()))
+            .filter(reply -> reply.isFeedback())
+            .filter(reply -> reply.getAuthorUsername().equals(currentUsername) || postAuthorUsername.equals(currentUsername))
             .sorted((r1, r2) -> r1.getCreatedAt().compareTo(r2.getCreatedAt())) // Oldest first
             .collect(Collectors.toList());
     }

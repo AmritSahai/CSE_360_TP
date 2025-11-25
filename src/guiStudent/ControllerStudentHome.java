@@ -56,7 +56,12 @@ public class ControllerStudentHome {
 	 */
 	protected static void createPost() {
 		PostCollection posts = ModelStudentHome.getPostCollection();
+		// Load threads for dropdown
+		guiStaff.ModelStaffHome.refreshThreadsFromDatabase();
+		entityClasses.ThreadCollection threads = guiStaff.ModelStaffHome.getThreadCollection();
 		String currentUsername = ViewStudentHome.theUser.getUserName();
+		// Get open threads only
+		List<entityClasses.Thread> openThreads = threads.getOpenThreads();
 		
 		// Create dialog for post creation
 		Dialog<ButtonType> dialog = new Dialog<>();
@@ -79,16 +84,26 @@ public class ControllerStudentHome {
 		bodyArea.setPrefWidth(400);
 		bodyArea.setWrapText(true);
 		
-		TextField threadField = new TextField();
-		threadField.setPromptText("Thread (default: General)");
-		threadField.setText("General");
+		ComboBox<String> threadComboBox = new ComboBox<>();
+		threadComboBox.setPromptText("Select a thread *");
+		threadComboBox.setPrefWidth(400);
+		
+		// Populate with open threads
+		for (entityClasses.Thread thread : openThreads) {
+			threadComboBox.getItems().add(thread.getTitle());
+		}
+		
+		// If no threads available, add default
+		if (openThreads.isEmpty()) {
+			threadComboBox.getItems().add("General");
+		}
 		
 		grid.add(new Label("Title:"), 0, 0);
 		grid.add(titleField, 1, 0);
 		grid.add(new Label("Body:"), 0, 1);
 		grid.add(bodyArea, 1, 1);
-		grid.add(new Label("Thread:"), 0, 2);
-		grid.add(threadField, 1, 2);
+		grid.add(new Label("Thread:*"), 0, 2);
+		grid.add(threadComboBox, 1, 2);
 		
 		dialog.getDialogPane().setContent(grid);
 		dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
@@ -97,9 +112,18 @@ public class ControllerStudentHome {
 		if (result.isPresent() && result.get() == ButtonType.OK) {
 			String title = titleField.getText();
 			String body = bodyArea.getText();
-			String thread = threadField.getText();
+			String selectedThread = threadComboBox.getValue();
 			
-			String postIdOrError = posts.createPost(title, body, currentUsername, thread);
+			if (selectedThread == null || selectedThread.trim().isEmpty()) {
+				Alert alert = new Alert(Alert.AlertType.ERROR);
+				alert.setTitle("Create Post");
+				alert.setHeaderText("Validation Error");
+				alert.setContentText("Please select a thread.");
+				alert.showAndWait();
+				return;
+			}
+			
+			String postIdOrError = posts.createPost(title, body, currentUsername, selectedThread.trim());
 			
 			Alert alert = new Alert(Alert.AlertType.INFORMATION);
 			alert.setTitle("Create Post");
@@ -161,6 +185,8 @@ public class ControllerStudentHome {
 	 * 
 	 */
 	protected static void viewMyPosts() {
+		// Refresh collections from database to ensure we have the latest data
+		ModelStudentHome.refreshFromDatabase();
 		PostCollection posts = ModelStudentHome.getPostCollection();
 		ReplyCollection replies = ModelStudentHome.getReplyCollection();
 		String currentUsername = ViewStudentHome.theUser.getUserName();
@@ -177,6 +203,8 @@ public class ControllerStudentHome {
 	 * 
 	 */
 	protected static void viewAllPosts() {
+		// Refresh collections from database to ensure we have the latest data
+		ModelStudentHome.refreshFromDatabase();
 		PostCollection posts = ModelStudentHome.getPostCollection();
 		ReplyCollection replies = ModelStudentHome.getReplyCollection();
 		
@@ -294,6 +322,8 @@ public class ControllerStudentHome {
 	 * 
 	 */
 	private static void viewPostDetails(String postId) {
+		// Refresh collections from database to ensure we have the latest feedback
+		ModelStudentHome.refreshFromDatabase();
 		PostCollection posts = ModelStudentHome.getPostCollection();
 		ReplyCollection replies = ModelStudentHome.getReplyCollection();
 		String currentUsername = ViewStudentHome.theUser.getUserName();
@@ -441,6 +471,47 @@ public class ControllerStudentHome {
 			noRepliesLabel.setStyle("-fx-font-style: italic; -fx-text-fill: #666666;");
 			mainContainer.getChildren().add(noRepliesLabel);
 		}
+		
+		// Feedback section (only visible to post author and feedback author)
+				List<Reply> feedbackList = replies.getFeedbackForPost(postId, currentUsername, post.getAuthorUsername());
+				if (!feedbackList.isEmpty()) {
+					Label feedbackHeader = new Label("FEEDBACK (" + feedbackList.size() + ")");
+					feedbackHeader.setStyle("-fx-font-weight: bold; -fx-font-size: 14; -fx-text-fill: #FF9800;");
+					mainContainer.getChildren().add(feedbackHeader);
+					
+					// Create scrollable container for feedback
+					ScrollPane feedbackScrollPane = new ScrollPane();
+					VBox feedbackContainer = new VBox(10);
+					feedbackContainer.setPadding(new Insets(5));
+					
+					for (Reply feedback : feedbackList) {
+						// Create feedback card
+						VBox feedbackCard = new VBox(5);
+						feedbackCard.setStyle("-fx-border-color: #FF9800; -fx-border-width: 2; -fx-padding: 10; -fx-background-color: #FFF3E0;");
+						
+						// Feedback header
+						HBox feedbackHeaderBox = new HBox(10);
+						Label feedbackAuthor = new Label("Feedback from: " + feedback.getAuthorUsername());
+						feedbackAuthor.setStyle("-fx-font-weight: bold; -fx-font-size: 12; -fx-text-fill: #E65100;");
+						
+						Label feedbackDate = new Label(feedback.getFormattedCreatedAt());
+						feedbackDate.setStyle("-fx-font-size: 11; -fx-text-fill: #999999;");
+						
+						feedbackHeaderBox.getChildren().addAll(feedbackAuthor, feedbackDate);
+						
+						// Feedback body
+						Label feedbackBody = new Label(feedback.getDisplayBody());
+						feedbackBody.setWrapText(true);
+						
+						feedbackCard.getChildren().addAll(feedbackHeaderBox, feedbackBody);
+						feedbackContainer.getChildren().add(feedbackCard);
+					}
+					
+					feedbackScrollPane.setContent(feedbackContainer);
+					feedbackScrollPane.setPrefHeight(200);
+					feedbackScrollPane.setFitToWidth(true);
+					mainContainer.getChildren().add(feedbackScrollPane);
+				}
 		
 		// Create scrollable container for the entire content
 		ScrollPane mainScrollPane = new ScrollPane();

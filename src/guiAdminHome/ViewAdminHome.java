@@ -104,6 +104,10 @@ public class ViewAdminHome {
 	protected static Button button_ListUsers = new Button("List All Users");
 	protected static Button button_AddRemoveRoles = new Button("Add/Remove Roles");
 	protected static Alert alertNotImplemented = new Alert(AlertType.INFORMATION);
+	
+	// GUI Area 4b: Staff Requests
+		protected static Label label_RequestSection = new Label("Staff Requests");
+		protected static Button button_ViewRequests = new Button("View All Requests");
 
 	// This is a separator and it is used to partition the GUI for various tasks
 	private static Line line_Separator4 = new Line(20, 525, width-20,525);
@@ -264,6 +268,12 @@ public class ViewAdminHome {
 		setupButtonUI(button_AddRemoveRoles, "Dialog", 16, 250, Pos.CENTER, 20, 470);
 		button_AddRemoveRoles.setOnAction((event) -> {ControllerAdminHome.addRemoveRoles(); });
 		
+		// GUI Area 4b - Staff Requests (placed on right side)
+		setupLabelUI(label_RequestSection, "Arial", 20, width, Pos.BASELINE_LEFT, 300, 270);
+				
+		setupButtonUI(button_ViewRequests, "Dialog", 16, 200, Pos.CENTER, 300, 310);
+		button_ViewRequests.setOnAction((event) -> {ControllerAdminHome.viewAllRequests(); });
+		
 		// GUI Area 5
 		setupButtonUI(button_Logout, "Dialog", 18, 250, Pos.CENTER, 20, 540);
 		button_Logout.setOnAction((event) -> {ControllerAdminHome.performLogout(); });
@@ -286,6 +296,7 @@ public class ViewAdminHome {
     		button_DeleteUser,
     		button_ListUsers,
     		button_AddRemoveRoles,
+    		label_RequestSection, button_ViewRequests,
     		line_Separator4, 
     		button_Logout,
     		button_Quit

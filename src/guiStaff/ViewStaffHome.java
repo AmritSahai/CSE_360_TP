@@ -14,9 +14,9 @@ import entityClasses.User;
 
 
 /*******
- * <p> Title: ViewStaffHome Class. </p>
+ * <p> Title: ViewRole2Home Class. </p>
  * 
- * <p> Description: The Java/FX-based Staff Home Page.  The page is a stub for some role needed for
+ * <p> Description: The Java/FX-based Role2 Home Page.  The page is a stub for some role needed for
  * the application.  The widgets on this page are likely the minimum number and kind for other role
  * pages that may be needed.</p>
  * 
@@ -53,10 +53,25 @@ public class ViewStaffHome {
 	// This is a separator and it is used to partition the GUI for various tasks
 	protected static Line line_Separator1 = new Line(20, 95, width-20, 95);
 
-	// GUI ARea 2: This is a stub, so there are no widgets here.  For an actual role page, this are
-	// would contain the widgets needed for the user to play the assigned role.
+	// GUI Area 2: Grading Parameter Management
+	protected static Label label_ParameterSection = new Label("Grading Parameter Management");
+	protected static Button button_CreateParameter = new Button("Create Parameter");
+	protected static Button button_ViewParameters = new Button("View My Parameters");
+	protected static Button button_DeleteAllParameters = new Button("Delete All Parameters");
 	
+	// GUI Area 2b: Thread Management
+	protected static Label label_ThreadSection = new Label("Thread Management");
+	protected static Button button_CreateThread = new Button("Create Thread");
+	protected static Button button_ViewThreads = new Button("View My Threads");
 	
+	// GUI Area 2c: Admin Requests
+	protected static Label label_RequestSection = new Label("Admin Requests");
+	protected static Button button_CreateRequest = new Button("Create Request");
+	protected static Button button_ViewMyRequests = new Button("View My Requests");
+	
+	// GUI Area 2d: Post Review and Feedback
+	protected static Label label_ReviewSection = new Label("Review Posts and Provide Feedback");
+	protected static Button button_ViewAllPosts = new Button("View All Posts");
 	
 	// This is a separator and it is used to partition the GUI for various tasks
 	protected static Line line_Separator4 = new Line(20, 525, width-20,525);
@@ -80,7 +95,7 @@ public class ViewStaffHome {
 	protected static User theUser;				// The current logged in User
 	
 	private static Scene theStaffHomeScene;		// The shared Scene each invocation populates
-	protected static final int theRole = 3;		// Admin: 1; Student: 2; Staff: 3
+	protected static final int theRole = 3;		// Admin: 1; Role1: 2; Role2: 3
 
 	/*-*******************************************************************************************
 
@@ -89,10 +104,10 @@ public class ViewStaffHome {
 	 */
 
 	/**********
-	 * <p> Method: displayStaffHome(Stage ps, User user) </p>
+	 * <p> Method: displayRole2Home(Stage ps, User user) </p>
 	 * 
 	 * <p> Description: This method is the single entry point from outside this package to cause
-	 * the Staff Home page to be displayed.
+	 * the Role2 Home page to be displayed.
 	 * 
 	 * It first sets up every shared attributes so we don't have to pass parameters.
 	 * 
@@ -132,14 +147,14 @@ public class ViewStaffHome {
 	}
 	
 	/**********
-	 * <p> Method: ViewStaffHome() </p>
+	 * <p> Method: ViewRole2Home() </p>
 	 * 
 	 * <p> Description: This method initializes all the elements of the graphical user interface.
 	 * This method determines the location, size, font, color, and change and event handlers for
 	 * each GUI object. </p>
 	 * 
 	 * This is a singleton and is only performed once.  Subsequent uses fill in the changeable
-	 * fields using the displayStaffHome method.</p>
+	 * fields using the displayRole2Home method.</p>
 	 * 
 	 */
 	private ViewStaffHome() {
@@ -162,10 +177,41 @@ public class ViewStaffHome {
 		setupButtonUI(button_UpdateThisUser, "Dialog", 18, 170, Pos.CENTER, 610, 45);
 		button_UpdateThisUser.setOnAction((event) -> {ControllerStaffHome.performUpdate(); });
 		
-		// GUI Area 2
+		// GUI Area 2 - Grading Parameter Management
+		setupLabelUI(label_ParameterSection, "Arial", 20, width, Pos.BASELINE_LEFT, 20, 120);
 		
-			// This is a stub, so this area is empty
+		setupButtonUI(button_CreateParameter, "Dialog", 16, 200, Pos.CENTER, 20, 160);
+		button_CreateParameter.setOnAction((event) -> {ControllerStaffHome.createParameter(); });
 		
+		setupButtonUI(button_ViewParameters, "Dialog", 16, 200, Pos.CENTER, 250, 160);
+		button_ViewParameters.setOnAction((event) -> {ControllerStaffHome.viewMyParameters(); });
+		
+		setupButtonUI(button_DeleteAllParameters, "Dialog", 16, 200, Pos.CENTER, 480, 160);
+		button_DeleteAllParameters.setOnAction((event) -> {ControllerStaffHome.deleteAllParameters(); });
+		
+		// GUI Area 2b - Thread Management
+		setupLabelUI(label_ThreadSection, "Arial", 20, width, Pos.BASELINE_LEFT, 20, 220);
+		
+		setupButtonUI(button_CreateThread, "Dialog", 16, 200, Pos.CENTER, 20, 260);
+		button_CreateThread.setOnAction((event) -> {ControllerStaffHome.createThread(); });
+		
+		setupButtonUI(button_ViewThreads, "Dialog", 16, 200, Pos.CENTER, 250, 260);
+		button_ViewThreads.setOnAction((event) -> {ControllerStaffHome.viewMyThreads(); });
+		
+		// GUI Area 2c - Admin Requests
+		setupLabelUI(label_RequestSection, "Arial", 20, width, Pos.BASELINE_LEFT, 20, 320);
+		
+		setupButtonUI(button_CreateRequest, "Dialog", 16, 200, Pos.CENTER, 20, 360);
+		button_CreateRequest.setOnAction((event) -> {ControllerStaffHome.createRequest(); });
+		
+		setupButtonUI(button_ViewMyRequests, "Dialog", 16, 200, Pos.CENTER, 250, 360);
+		button_ViewMyRequests.setOnAction((event) -> {ControllerStaffHome.viewMyRequests(); });
+		
+		// GUI Area 2d - Post Review and Feedback
+		setupLabelUI(label_ReviewSection, "Arial", 20, width, Pos.BASELINE_LEFT, 20, 420);
+		
+		setupButtonUI(button_ViewAllPosts, "Dialog", 16, 200, Pos.CENTER, 20, 460);
+		button_ViewAllPosts.setOnAction((event) -> {ControllerStaffHome.viewAllPosts(); });
 		
 		// GUI Area 3
         setupButtonUI(button_Logout, "Dialog", 18, 250, Pos.CENTER, 20, 540);
@@ -179,6 +225,10 @@ public class ViewStaffHome {
 		// Place all of the widget items into the Root Pane's list of children
         theRootPane.getChildren().addAll(
 			label_PageTitle, label_UserDetails, button_UpdateThisUser, line_Separator1,
+			label_ParameterSection, button_CreateParameter, button_ViewParameters, button_DeleteAllParameters,
+			label_ThreadSection, button_CreateThread, button_ViewThreads,
+			label_RequestSection, button_CreateRequest, button_ViewMyRequests,
+			label_ReviewSection, button_ViewAllPosts,
 	        line_Separator4, button_Logout, button_Quit);
 	}
 	

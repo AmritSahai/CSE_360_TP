@@ -38,8 +38,21 @@ public class ModelStudentHome {
      */
 	public static void initializeFromDatabase() {
 		if (isInitialized) return;
-		
+		refreshFromDatabase();
+	}
+	
+	/*****
+     * <p> Method: refreshFromDatabase() </p>
+     * 
+     * <p> Description: Refreshes posts and replies from the database, clearing existing data first.
+     * This ensures the collections are synchronized with the latest database state.</p>
+     */
+	public static void refreshFromDatabase() {
 		try {
+			// Clear existing collections
+			postCollection = new PostCollection();
+			replyCollection = new ReplyCollection();
+			
 			// Load all posts
 			List<Post> posts = theDatabase.loadAllPosts();
 			for (Post post : posts) {
@@ -53,9 +66,9 @@ public class ModelStudentHome {
 			}
 			
 			isInitialized = true;
-			System.out.println("Forum data loaded from database: " + posts.size() + " posts, " + replies.size() + " replies");
+			System.out.println("Forum data refreshed from database: " + posts.size() + " posts, " + replies.size() + " replies");
 		} catch (SQLException e) {
-			System.err.println("Error loading forum data from database: " + e.getMessage());
+			System.err.println("Error refreshing forum data from database: " + e.getMessage());
 			e.printStackTrace();
 		}
 	}

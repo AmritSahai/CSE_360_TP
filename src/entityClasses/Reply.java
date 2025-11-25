@@ -30,6 +30,7 @@ public class Reply {
     private LocalDateTime lastEditedAt;
     private boolean isDeleted;
     private boolean isRead;
+    private boolean isFeedback; // True if this is private feedback from staff
     
     // Constants for validation
     public static final int MAX_BODY_LENGTH = 3000;
@@ -66,6 +67,31 @@ public class Reply {
         this.lastEditedAt = null;
         this.isDeleted = false;
         this.isRead = false;
+        this.isFeedback = false;
+    }
+    
+    /*****
+     * <p> Method: Reply(String replyId, String body, String authorUsername, String parentPostId, boolean isFeedback) </p>
+     * 
+     * <p> Description: Constructor for creating a reply with feedback flag. </p>
+     * 
+     * @param replyId specifies the unique identifier for this reply
+     * @param body specifies the content/body of the reply
+     * @param authorUsername specifies the username of the reply author
+     * @param parentPostId specifies the ID of the post this reply belongs to
+     * @param isFeedback specifies if this is private feedback from staff
+     * 
+     */
+    public Reply(String replyId, String body, String authorUsername, String parentPostId, boolean isFeedback) {
+        this.replyId = replyId;
+        this.body = body;
+        this.authorUsername = authorUsername;
+        this.parentPostId = parentPostId;
+        this.createdAt = LocalDateTime.now();
+        this.lastEditedAt = null;
+        this.isDeleted = false;
+        this.isRead = false;
+        this.isFeedback = isFeedback;
     }
 
     /*****
@@ -282,5 +308,13 @@ public class Reply {
 
     public void setRead(boolean read) { 
         this.isRead = read; 
+    }
+    
+    public boolean isFeedback() {
+        return isFeedback;
+    }
+    
+    public void setFeedback(boolean feedback) {
+        this.isFeedback = feedback;
     }
 }

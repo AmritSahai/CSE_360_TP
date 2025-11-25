@@ -1,6 +1,14 @@
 package guiAdminHome;
 
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Optional;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
+import javafx.geometry.Insets;
 import database.Database;
+import entityClasses.Request;
+import entityClasses.RequestCollection;
 
 /*******
  * <p> Title: GUIAdminHomePage Class. </p>
@@ -363,5 +371,299 @@ public class ControllerAdminHome {
 	 */
 	protected static void performQuit() {
 		System.exit(0);
+	}
+	
+	/**********
+	 * <p> Method: void viewAllRequests() </p>
+	 * 
+	 * <p> Description: Displays all requests created by staff, sorted by status (Open first,
+	 * then Closed). Shows request ID, title, category, status, creator, and allows closing
+	 * open requests.</p>
+	 * 
+	 */
+	protected static void viewAllRequests() {
+		// Use ModelStaffHome to access request collection
+		guiStaff.ModelStaffHome.refreshRequestsFromDatabase();
+		RequestCollection requests = guiStaff.ModelStaffHome.getRequestCollection();
+		
+		List<Request> allRequests = requests.getAllRequests();
+		
+		if (allRequests.isEmpty()) {
+			Alert alert = new Alert(Alert.AlertType.INFORMATION);
+			alert.setTitle("All Requests");
+			alert.setHeaderText("No Requests Found");
+			alert.setContentText("There are no requests from staff.");
+			alert.showAndWait();
+			return;
+		}
+		
+		// Create a scrollable pane with individual request cards
+		ScrollPane scrollPane = new ScrollPane();
+		VBox requestContainer = new VBox(10);
+		requestContainer.setPadding(new Insets(10));
+		
+		// Group requests by status
+		List<Request> openRequests = new ArrayList<>();
+		List<Request> closedRequests = new ArrayList<>();
+		for (Request request : allRequests) {
+			if (request.isOpen()) {
+				openRequests.add(request);
+			} else {
+				closedRequests.add(request);
+			}
+		}
+		
+		// Display Open requests
+		if (!openRequests.isEmpty()) {
+			Label openHeader = new Label("OPEN REQUESTS");
+			openHeader.setStyle("-fx-font-weight: bold; -fx-font-size: 16; -fx-text-fill: #4CAF50;");
+			requestContainer.getChildren().add(openHeader);
+			
+			for (Request request : openRequests) {
+				VBox requestCard = createRequestCardForAdmin(request);
+				requestContainer.getChildren().add(requestCard);
+			}
+		}
+		
+		// Display Closed requests
+		if (!closedRequests.isEmpty()) {
+			Label closedHeader = new Label("CLOSED REQUESTS");
+			closedHeader.setStyle("-fx-font-weight: bold; -fx-font-size: 16; -fx-text-fill: #999999;");
+			if (!openRequests.isEmpty()) {
+				closedHeader.setPadding(new Insets(20, 0, 0, 0)); // Add spacing
+			}
+			requestContainer.getChildren().add(closedHeader);
+			
+			for (Request request : closedRequests) {
+				VBox requestCard = createRequestCardForAdmin(request);
+				requestContainer.getChildren().add(requestCard);
+			}
+		}
+		
+		scrollPane.setContent(requestContainer);
+		scrollPane.setPrefSize(900, 600);
+		scrollPane.setFitToWidth(true);
+		
+		Dialog<Void> dialog = new Dialog<>();
+		dialog.setTitle("All Requests");
+		dialog.setHeaderText("Total: " + allRequests.size() + " request(s) - " + openRequests.size() + " Open, " + closedRequests.size() + " Closed");
+		dialog.getDialogPane().setContent(scrollPane);
+		
+		ButtonType closeBtn = new ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE);
+		dialog.getDialogPane().getButtonTypes().add(closeBtn);
+		dialog.showAndWait();
+	}
+	
+	/**********
+	 * <p> Method: VBox createRequestCardForAdmin() </p>
+	 * 
+	 * <p> Description: Helper method to create a visual card for a request with close button for admin.</p>
+	 * 
+	 * @param request the request to display
+	 * @return a VBox containing the request card UI
+	 */
+	private static VBox createRequestCardForAdmin(Request request) {
+		VBox requestCard = new VBox(5);
+		requestCard.setStyle("-fx-border-color: #cccccc; -fx-border-width: 1; -fx-padding: 10; -fx-background-color: #f9f9f9;");
+		
+		// Request header
+		HBox headerBox = new HBox(10);
+		Label requestIdLabel = new Label("Request #" + request.getRequestId());
+		requestIdLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14;");
+		
+		Label titleLabel = new Label(request.getTitle());
+		titleLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14;");
+		
+		Label statusLabel = new Label("Status: " + request.getStatusString());
+		if (request.isOpen()) {
+			statusLabel.setStyle("-fx-font-size: 12; -fx-text-fill: #4CAF50; -fx-font-weight: bold;");
+		} else {
+			statusLabel.setStyle("-fx-font-size: 12; -fx-text-fill: #999999;");
+		}
+		
+		headerBox.getChildren().addAll(requestIdLabel, titleLabel, statusLabel);
+		
+		// Request metadata
+		Label categoryLabel = new Label("Category: " + request.getCategoryString());
+		categoryLabel.setStyle("-fx-font-size: 12; -fx-text-fill: #666666;");
+		
+		Label creatorLabel = new Label("Created by: " + request.getCreatedByUsername() + " on " + request.getFormattedCreatedAt());
+		creatorLabel.setStyle("-fx-font-size: 11; -fx-text-fill: #999999;");
+		
+		// Request description
+		Label descLabel = new Label(request.getDescription());
+		descLabel.setWrapText(true);
+		descLabel.setStyle("-fx-font-size: 12;");
+		
+		// Resolution notes (if closed)
+		VBox contentBox = new VBox(5);
+		contentBox.getChildren().addAll(headerBox, categoryLabel, creatorLabel, descLabel);
+		
+		if (request.isClosed() && request.getResolutionNotes() != null && !request.getResolutionNotes().isEmpty()) {
+			Label resolutionHeader = new Label("Resolution Notes:");
+			resolutionHeader.setStyle("-fx-font-weight: bold; -fx-font-size: 12; -fx-text-fill: #2196F3;");
+			Label resolutionLabel = new Label(request.getResolutionNotes());
+			resolutionLabel.setWrapText(true);
+			resolutionLabel.setStyle("-fx-font-size: 12; -fx-text-fill: #333333; -fx-background-color: #E3F2FD; -fx-padding: 5;");
+			Label closedByLabel = new Label("Closed by: " + request.getClosedByUsername() + " on " + request.getFormattedClosedAt());
+			closedByLabel.setStyle("-fx-font-size: 11; -fx-text-fill: #999999;");
+			contentBox.getChildren().addAll(resolutionHeader, resolutionLabel, closedByLabel);
+		}
+		
+		// Reopen reason (if reopened)
+		if (request.isReopened() && request.getReopenReason() != null && !request.getReopenReason().isEmpty()) {
+			Label reopenHeader = new Label("Reopen Reason:");
+			reopenHeader.setStyle("-fx-font-weight: bold; -fx-font-size: 12; -fx-text-fill: #FF9800;");
+			Label reopenLabel = new Label(request.getReopenReason());
+			reopenLabel.setWrapText(true);
+			reopenLabel.setStyle("-fx-font-size: 12; -fx-text-fill: #333333; -fx-background-color: #FFF3E0; -fx-padding: 5;");
+			Label reopenedLabel = new Label("Reopened on: " + request.getFormattedReopenedAt());
+			reopenedLabel.setStyle("-fx-font-size: 11; -fx-text-fill: #999999;");
+			contentBox.getChildren().addAll(reopenHeader, reopenLabel, reopenedLabel);
+			
+			// Link to original request
+			if (request.getOriginalRequestId() != null) {
+				Label originalLabel = new Label("Original Request: #" + request.getOriginalRequestId());
+				originalLabel.setStyle("-fx-font-size: 11; -fx-text-fill: #666666; -fx-font-style: italic;");
+				contentBox.getChildren().add(originalLabel);
+			}
+		}
+		
+		// Action buttons
+		HBox buttonBox = new HBox(10);
+		if (request.isOpen()) {
+			Button closeBtn = new Button("Close Request");
+			closeBtn.setStyle("-fx-background-color: #2196F3; -fx-text-fill: white;");
+			closeBtn.setOnAction(e -> closeRequest(request));
+			buttonBox.getChildren().add(closeBtn);
+		}
+		
+		requestCard.getChildren().addAll(contentBox);
+		if (!buttonBox.getChildren().isEmpty()) {
+			requestCard.getChildren().add(buttonBox);
+		}
+		
+		return requestCard;
+	}
+	
+	/**********
+	 * <p> Method: void closeRequest() </p>
+	 * 
+	 * <p> Description: Handles closing a request. If no request is provided, displays a dialog
+	 * to select a request. Requires admin to document steps taken to resolve the request.</p>
+	 * 
+	 * @param request the request to close (null if called from button)
+	 */
+	protected static void closeRequest(Request request) {
+		// If request is null, show all open requests and let admin select
+		if (request == null) {
+			guiStaff.ModelStaffHome.refreshRequestsFromDatabase();
+			RequestCollection requests = guiStaff.ModelStaffHome.getRequestCollection();
+			List<Request> openRequests = requests.getOpenRequests();
+			
+			if (openRequests.isEmpty()) {
+				Alert alert = new Alert(Alert.AlertType.INFORMATION);
+				alert.setTitle("Close Request");
+				alert.setHeaderText("No Open Requests");
+				alert.setContentText("There are no open requests to close.");
+				alert.showAndWait();
+				return;
+			}
+			
+			// Create selection dialog
+			Dialog<ButtonType> selectDialog = new Dialog<>();
+			selectDialog.setTitle("Select Request to Close");
+			selectDialog.setHeaderText("Select a request to close:");
+			
+			ComboBox<String> requestComboBox = new ComboBox<>();
+			for (Request req : openRequests) {
+				requestComboBox.getItems().add("Request #" + req.getRequestId() + ": " + req.getTitle());
+			}
+			requestComboBox.setPrefWidth(500);
+			
+			VBox content = new VBox(10);
+			content.setPadding(new Insets(20));
+			content.getChildren().add(requestComboBox);
+			selectDialog.getDialogPane().setContent(content);
+			selectDialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+			
+			Optional<ButtonType> selectResult = selectDialog.showAndWait();
+			if (selectResult.isPresent() && selectResult.get() == ButtonType.OK) {
+				String selected = requestComboBox.getValue();
+				if (selected == null || selected.isEmpty()) {
+					Alert alert = new Alert(Alert.AlertType.ERROR);
+					alert.setTitle("Close Request");
+					alert.setHeaderText("Validation Error");
+					alert.setContentText("Please select a request.");
+					alert.showAndWait();
+					return;
+				}
+				
+				// Extract request ID from selection
+				String requestId = selected.substring(selected.indexOf("#") + 1, selected.indexOf(":"));
+				request = requests.getRequestById(requestId);
+			} else {
+				return; // User cancelled
+			}
+		}
+		
+		if (request == null) {
+			Alert alert = new Alert(Alert.AlertType.ERROR);
+			alert.setTitle("Close Request");
+			alert.setHeaderText("Error");
+			alert.setContentText("Request not found.");
+			alert.showAndWait();
+			return;
+		}
+		
+		// Create dialog for closing request with resolution notes
+		Dialog<ButtonType> dialog = new Dialog<>();
+		dialog.setTitle("Close Request");
+		dialog.setHeaderText("Close Request #" + request.getRequestId() + "\n" + request.getTitle());
+		
+		// Set up dialog content
+		VBox content = new VBox(10);
+		content.setPadding(new Insets(20));
+		
+		Label infoLabel = new Label("Please document the steps you have taken to resolve this request:");
+		infoLabel.setStyle("-fx-font-size: 12; -fx-text-fill: #666666;");
+		infoLabel.setWrapText(true);
+		
+		TextArea resolutionArea = new TextArea();
+		resolutionArea.setPromptText("Enter resolution notes (required, max 2000 characters)");
+		resolutionArea.setPrefRowCount(10);
+		resolutionArea.setPrefWidth(500);
+		resolutionArea.setWrapText(true);
+		
+		content.getChildren().addAll(infoLabel, resolutionArea);
+		dialog.getDialogPane().setContent(content);
+		dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+		
+		Optional<ButtonType> result = dialog.showAndWait();
+		if (result.isPresent() && result.get() == ButtonType.OK) {
+			String resolutionNotes = resolutionArea.getText().trim();
+			String currentUsername = ViewAdminHome.theUser.getUserName();
+			
+			guiStaff.ModelStaffHome.refreshRequestsFromDatabase();
+			RequestCollection requests = guiStaff.ModelStaffHome.getRequestCollection();
+			String error = requests.closeRequest(request.getRequestId(), currentUsername, resolutionNotes);
+			
+			Alert alert = new Alert(Alert.AlertType.INFORMATION);
+			alert.setTitle("Close Request");
+			if (error.isEmpty()) {
+				// Save to database
+				Request updatedRequest = requests.getRequestById(request.getRequestId());
+				guiStaff.ModelStaffHome.saveRequestToDatabase(updatedRequest);
+				
+				alert.setHeaderText("Request Closed");
+				alert.setContentText("Request #" + request.getRequestId() + " has been closed successfully.");
+				alert.showAndWait();
+			} else {
+				alert.setAlertType(Alert.AlertType.ERROR);
+				alert.setHeaderText("Close Failed");
+				alert.setContentText(error);
+				alert.showAndWait();
+			}
+		}
 	}
 }

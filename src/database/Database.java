@@ -13,6 +13,10 @@ import java.util.UUID;
 import entityClasses.User;
 import entityClasses.Post;
 import entityClasses.Reply;
+import entityClasses.Parameter;
+import entityClasses.ParameterCategory;
+import entityClasses.Thread;
+import entityClasses.Request;
 
 /*******
  * <p> Title: Database Class. </p>
@@ -142,6 +146,33 @@ public class Database {
 	            + "isDeleted BOOLEAN DEFAULT FALSE)";
 	    statement.execute(postsTable);
 	    
+	 // Create the threads table
+	    String threadsTable = "CREATE TABLE IF NOT EXISTS threadsDB ("
+	            + "threadId VARCHAR(50) PRIMARY KEY, "
+	            + "title VARCHAR(100), "
+	            + "description VARCHAR(500), "
+	            + "status VARCHAR(10) DEFAULT 'OPEN', "
+	            + "createdByUsername VARCHAR(255), "
+	            + "createdAt TIMESTAMP)";
+	    statement.execute(threadsTable);
+	    
+	    // Create the requests table
+	    String requestsTable = "CREATE TABLE IF NOT EXISTS requestsDB ("
+	            + "requestId VARCHAR(50) PRIMARY KEY, "
+	            + "title VARCHAR(200), "
+	            + "description VARCHAR(2000), "
+	            + "category VARCHAR(50), "
+	            + "status VARCHAR(10) DEFAULT 'OPEN', "
+	            + "createdByUsername VARCHAR(255), "
+	            + "closedByUsername VARCHAR(255), "
+	            + "resolutionNotes VARCHAR(2000), "
+	            + "reopenReason VARCHAR(1000), "
+	            + "originalRequestId VARCHAR(50), "
+	            + "createdAt TIMESTAMP, "
+	            + "closedAt TIMESTAMP, "
+	            + "reopenedAt TIMESTAMP)";
+	    statement.execute(requestsTable);
+	    
 	    // Create the replies table
 	    String repliesTable = "CREATE TABLE IF NOT EXISTS repliesDB ("
 	            + "replyId VARCHAR(50) PRIMARY KEY, "
@@ -151,8 +182,57 @@ public class Database {
 	            + "createdAt TIMESTAMP, "
 	            + "lastEditedAt TIMESTAMP, "
 	            + "isDeleted BOOLEAN DEFAULT FALSE, "
-	            + "isRead BOOLEAN DEFAULT FALSE)";
+	            + "isRead BOOLEAN DEFAULT FALSE, "
+	            + "isFeedback BOOLEAN DEFAULT FALSE)";
 	    statement.execute(repliesTable);
+	    
+	 // Add isFeedback column to existing table if it doesn't exist (for backward compatibility)
+	    try {
+	        statement.execute("ALTER TABLE repliesDB ADD COLUMN IF NOT EXISTS isFeedback BOOLEAN DEFAULT FALSE");
+	    } catch (SQLException e) {
+	        // Column may already exist, ignore
+	    }
+	    
+	    
+	 // Create the grading parameters table
+	    String parametersTable = "CREATE TABLE IF NOT EXISTS gradingParametersDB ("
+	            + "parameterId VARCHAR(50) PRIMARY KEY, "
+	            + "name VARCHAR(100), "
+	            + "description VARCHAR(500), "
+	            + "isActive BOOLEAN DEFAULT TRUE, "
+	            + "createdByUsername VARCHAR(255), "
+	            + "createdAt TIMESTAMP, "
+	            + "requiredPosts INT DEFAULT 0, "
+	            + "requiredReplies INT DEFAULT 0, "
+	            + "topics VARCHAR(2000), "
+	            + "threadId VARCHAR(255) NOT NULL, "
+	            + "categories VARCHAR(5000))";
+	    statement.execute(parametersTable);
+	    
+	 // Add new columns to existing table if they don't exist (for backward compatibility)
+	    try {
+	        statement.execute("ALTER TABLE gradingParametersDB ADD COLUMN IF NOT EXISTS requiredPosts INT DEFAULT 0");
+	        statement.execute("ALTER TABLE gradingParametersDB ADD COLUMN IF NOT EXISTS requiredReplies INT DEFAULT 0");
+	        statement.execute("ALTER TABLE gradingParametersDB ADD COLUMN IF NOT EXISTS topics VARCHAR(2000)");
+	        statement.execute("ALTER TABLE gradingParametersDB ADD COLUMN IF NOT EXISTS threadId VARCHAR(255)");
+	        statement.execute("ALTER TABLE gradingParametersDB ADD COLUMN IF NOT EXISTS categories VARCHAR(5000)");
+	        // Remove isTemplate column if it exists (no longer needed)
+	        try {
+	            statement.execute("ALTER TABLE gradingParametersDB DROP COLUMN isTemplate");
+	        } catch (SQLException e) { /* Column may not exist, ignore */ }
+	    } catch (SQLException e) {
+	        // Columns may already exist, ignore
+	    }
+	    
+	    // Create parameter categories table
+	    String parameterCategoriesTable = "CREATE TABLE IF NOT EXISTS parameterCategoriesDB ("
+	            + "categoryId VARCHAR(50) PRIMARY KEY, "
+	            + "parameterId VARCHAR(50) NOT NULL, "
+	            + "categoryName VARCHAR(100), "
+	            + "weight DOUBLE, "
+	            + "categoryOrder INT, "
+	            + "FOREIGN KEY (parameterId) REFERENCES gradingParametersDB(parameterId) ON DELETE CASCADE)";
+	    statement.execute(parameterCategoriesTable);
 	}
 
 
@@ -267,7 +347,13 @@ public class Database {
 				userList.add(rs.getString("userName"));
 			}
 		} catch (SQLException e) {
-	        return null;
+			// Log the exception for debugging purposes
+	        System.err.println("Error retrieving user list: " + e.getMessage());
+	        // Return list with placeholder instead of null to prevent null pointer exceptions
+	        // This ensures callers can safely access index 0
+	        List<String> errorList = new ArrayList<String>();
+	        errorList.add("<Select a User>");
+	        return errorList;
 	    }
 //		System.out.println(userList);
 		return userList;
@@ -1228,7 +1314,7 @@ public class Database {
 		 */
 		public void saveReply(Reply reply) throws SQLException {
 			String query = "MERGE INTO repliesDB (replyId, body, authorUsername, parentPostId, " +
-			               "createdAt, lastEditedAt, isDeleted, isRead) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+					"createdAt, lastEditedAt, isDeleted, isRead, isFeedback) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 			try (PreparedStatement pstmt = connection.prepareStatement(query)) {
 				pstmt.setString(1, reply.getReplyId());
 				pstmt.setString(2, reply.getBody());
@@ -1238,6 +1324,7 @@ public class Database {
 				pstmt.setObject(6, reply.getLastEditedAt());
 				pstmt.setBoolean(7, reply.isDeleted());
 				pstmt.setBoolean(8, reply.isRead());
+				pstmt.setBoolean(9, reply.isFeedback());
 				pstmt.executeUpdate();
 			}
 		}
@@ -1254,11 +1341,19 @@ public class Database {
 			try (PreparedStatement pstmt = connection.prepareStatement(query)) {
 				ResultSet rs = pstmt.executeQuery();
 				while (rs.next()) {
+					boolean isFeedback = false;
+					try {
+						isFeedback = rs.getBoolean("isFeedback");
+					} catch (SQLException e) {
+						// Column may not exist in older databases, use default
+					}
+					
 					Reply reply = new Reply(
 						rs.getString("replyId"),
 						rs.getString("body"),
 						rs.getString("authorUsername"),
-						rs.getString("parentPostId")
+						rs.getString("parentPostId"),
+						isFeedback
 					);
 					reply.setCreatedAt(rs.getObject("createdAt", LocalDateTime.class));
 					reply.setLastEditedAt(rs.getObject("lastEditedAt", LocalDateTime.class));
@@ -1285,6 +1380,523 @@ public class Database {
 		}
 
 
+		/*******
+		 * <p> Method: void saveParameter(Parameter parameter) </p>
+		 * 
+		 * <p> Description: Saves a grading parameter to the database.</p>
+		 * 
+		 */
+		public void saveParameter(Parameter parameter) throws SQLException {
+			String query = "MERGE INTO gradingParametersDB (parameterId, name, description, " +
+		               "isActive, createdByUsername, createdAt, requiredPosts, " +
+		               "requiredReplies, topics, threadId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+			try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+				pstmt.setString(1, parameter.getParameterId());
+				pstmt.setString(2, parameter.getName());
+				pstmt.setString(3, parameter.getDescription());
+				pstmt.setBoolean(4, parameter.isActive());
+				pstmt.setString(5, parameter.getCreatedByUsername());
+				pstmt.setObject(6, parameter.getCreatedAt());
+				pstmt.setInt(7, parameter.getRequiredPosts());
+				pstmt.setInt(8, parameter.getRequiredReplies());
+				// Serialize topics list as comma-separated string
+				String topicsStr = String.join(",", parameter.getTopics());
+				pstmt.setString(9, topicsStr.isEmpty() ? null : topicsStr);
+				pstmt.setString(10, parameter.getThreadId());
+				pstmt.executeUpdate();
+			}
+
+			// Delete existing categories for this parameter
+			String deleteCategories = "DELETE FROM parameterCategoriesDB WHERE parameterId = ?";
+			try (PreparedStatement pstmt = connection.prepareStatement(deleteCategories)) {
+				pstmt.setString(1, parameter.getParameterId());
+				pstmt.executeUpdate();
+			}
+			
+			// Insert new categories
+			String insertCategory = "INSERT INTO parameterCategoriesDB (categoryId, parameterId, categoryName, weight, categoryOrder) VALUES (?, ?, ?, ?, ?)";
+			List<ParameterCategory> categories = parameter.getCategories();
+			for (int i = 0; i < categories.size(); i++) {
+				try (PreparedStatement pstmt = connection.prepareStatement(insertCategory)) {
+					ParameterCategory category = categories.get(i);
+					pstmt.setString(1, parameter.getParameterId() + "_CAT_" + i);
+					pstmt.setString(2, parameter.getParameterId());
+					pstmt.setString(3, category.getCategoryName());
+					pstmt.setDouble(4, category.getWeight());
+					pstmt.setInt(5, i);
+					pstmt.executeUpdate();
+				}
+			}
+		}
+		
+		/*******
+		 * <p> Method: List<Parameter> loadAllParameters() </p>
+		 * 
+		 * <p> Description: Loads all grading parameters from the database.</p>
+		 * 
+		 */
+		public List<Parameter> loadAllParameters() throws SQLException {
+			List<Parameter> parameters = new ArrayList<>();
+			String query = "SELECT * FROM gradingParametersDB";
+			try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+				ResultSet rs = pstmt.executeQuery();
+				while (rs.next()) {
+					// Load new fields with defaults for backward compatibility
+					int requiredPosts = 0;
+					int requiredReplies = 0;
+					String threadId = null;
+					List<String> topics = new ArrayList<>();
+					
+					try {
+						requiredPosts = rs.getInt("requiredPosts");
+					} catch (SQLException e) { /* use default */ }
+					
+					try {
+						requiredReplies = rs.getInt("requiredReplies");
+					} catch (SQLException e) { /* use default */ }
+					
+					try {
+						threadId = rs.getString("threadId");
+						if (rs.wasNull()) threadId = null;
+					} catch (SQLException e) { /* use default */ }
+					
+					try {
+						String topicsStr = rs.getString("topics");
+						if (topicsStr != null && !topicsStr.trim().isEmpty()) {
+							String[] topicArray = topicsStr.split(",");
+							for (String topic : topicArray) {
+								if (topic != null && !topic.trim().isEmpty()) {
+									topics.add(topic.trim());
+								}
+							}
+						}
+					} catch (SQLException e) { /* use default */ }
+					
+					// Load categories
+					List<ParameterCategory> categories = new ArrayList<>();
+					String categoriesQuery = "SELECT * FROM parameterCategoriesDB WHERE parameterId = ? ORDER BY categoryOrder";
+					try (PreparedStatement catPstmt = connection.prepareStatement(categoriesQuery)) {
+						catPstmt.setString(1, rs.getString("parameterId"));
+						ResultSet catRs = catPstmt.executeQuery();
+						while (catRs.next()) {
+							ParameterCategory category = new ParameterCategory(
+								catRs.getString("categoryName"),
+								catRs.getDouble("weight")
+							);
+							categories.add(category);
+						}
+					} catch (SQLException e) {
+						// Categories table may not exist yet, use empty list
+					}
+					
+					Parameter parameter = new Parameter(
+						rs.getString("parameterId"),
+						rs.getString("name"),
+						rs.getString("description"),
+						rs.getBoolean("isActive"),
+						rs.getString("createdByUsername"),
+						requiredPosts,
+						requiredReplies,
+						topics,
+						threadId,
+						categories
+					);
+					parameter.setCreatedAt(rs.getObject("createdAt", LocalDateTime.class));
+					parameters.add(parameter);
+				}
+			}
+			return parameters;
+		}
+		
+		/*******
+		 * <p> Method: List<Parameter> loadParametersByStaff(String staffUsername) </p>
+		 * 
+		 * <p> Description: Loads all grading parameters created by a specific staff member.</p>
+		 * 
+		 */
+		public List<Parameter> loadParametersByStaff(String staffUsername) throws SQLException {
+			List<Parameter> parameters = new ArrayList<>();
+			String query = "SELECT * FROM gradingParametersDB WHERE createdByUsername = ? ORDER BY createdAt DESC";
+			try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+				pstmt.setString(1, staffUsername);
+				ResultSet rs = pstmt.executeQuery();
+				while (rs.next()) {
+					// Load new fields with defaults for backward compatibility
+					int requiredPosts = 0;
+					int requiredReplies = 0;
+					String threadId = null;
+					List<String> topics = new ArrayList<>();
+					
+					try {
+						requiredPosts = rs.getInt("requiredPosts");
+					} catch (SQLException e) { /* use default */ }
+					
+					try {
+						requiredReplies = rs.getInt("requiredReplies");
+					} catch (SQLException e) { /* use default */ }
+					
+					try {
+						threadId = rs.getString("threadId");
+						if (rs.wasNull()) threadId = null;
+					} catch (SQLException e) { /* use default */ }
+					
+					try {
+						String topicsStr = rs.getString("topics");
+						if (topicsStr != null && !topicsStr.trim().isEmpty()) {
+							String[] topicArray = topicsStr.split(",");
+							for (String topic : topicArray) {
+								if (topic != null && !topic.trim().isEmpty()) {
+									topics.add(topic.trim());
+								}
+							}
+						}
+					} catch (SQLException e) { /* use default */ }
+					
+					// Load categories
+					List<ParameterCategory> categories = new ArrayList<>();
+					String categoriesQuery = "SELECT * FROM parameterCategoriesDB WHERE parameterId = ? ORDER BY categoryOrder";
+					try (PreparedStatement catPstmt = connection.prepareStatement(categoriesQuery)) {
+						catPstmt.setString(1, rs.getString("parameterId"));
+						ResultSet catRs = catPstmt.executeQuery();
+						while (catRs.next()) {
+							ParameterCategory category = new ParameterCategory(
+								catRs.getString("categoryName"),
+								catRs.getDouble("weight")
+							);
+							categories.add(category);
+						}
+					} catch (SQLException e) {
+						// Categories table may not exist yet, use empty list
+					}
+					
+					Parameter parameter = new Parameter(
+						rs.getString("parameterId"),
+						rs.getString("name"),
+						rs.getString("description"),
+						rs.getBoolean("isActive"),
+						rs.getString("createdByUsername"),
+						requiredPosts,
+						requiredReplies,
+						topics,
+						threadId,
+						categories
+					);
+					parameter.setCreatedAt(rs.getObject("createdAt", LocalDateTime.class));
+					parameters.add(parameter);
+				}
+			}
+			return parameters;
+		}
+		
+		/*******
+		 * <p> Method: void updateParameter(Parameter parameter) </p>
+		 * 
+		 * <p> Description: Updates an existing grading parameter in the database. Uses MERGE INTO
+		 * to update the parameter if it exists, or insert if it doesn't.</p>
+		 * 
+		 * @param parameter the Parameter object with updated values to save
+		 * @throws SQLException if a database error occurs
+		 */
+		public void updateParameter(Parameter parameter) throws SQLException {
+			// MERGE INTO works for both insert and update
+			saveParameter(parameter);
+		}
+		
+		/*******
+		 * <p> Method: boolean deleteParameter(String parameterId) </p>
+		 * 
+		 * <p> Description: Deletes a grading parameter from the database by its ID.</p>
+		 * 
+		 * @param parameterId the ID of the parameter to delete
+		 * @return true if the parameter was deleted, false if it was not found
+		 * @throws SQLException if a database error occurs
+		 */
+		public boolean deleteParameter(String parameterId) throws SQLException {
+			String query = "DELETE FROM gradingParametersDB WHERE parameterId = ?";
+			try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+				pstmt.setString(1, parameterId);
+				int affected = pstmt.executeUpdate();
+				return affected > 0;
+			}
+		}
+		
+		/*******
+		 * <p> Method: void saveThread(Thread thread) </p>
+		 * 
+		 * <p> Description: Saves a thread to the database using MERGE INTO (upsert).</p>
+		 * 
+		 * @param thread the Thread object to save
+		 * @throws SQLException if a database error occurs
+		 */
+		public void saveThread(Thread thread) throws SQLException {
+			String query = "MERGE INTO threadsDB (threadId, title, description, status, createdByUsername, createdAt) VALUES (?, ?, ?, ?, ?, ?)";
+			try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+				pstmt.setString(1, thread.getThreadId());
+				pstmt.setString(2, thread.getTitle());
+				pstmt.setString(3, thread.getDescription());
+				pstmt.setString(4, thread.getStatus().toString());
+				pstmt.setString(5, thread.getCreatedByUsername());
+				pstmt.setObject(6, thread.getCreatedAt());
+				pstmt.executeUpdate();
+			}
+		}
+		
+		/*******
+		 * <p> Method: List<Thread> loadAllThreads() </p>
+		 * 
+		 * <p> Description: Loads all threads from the database.</p>
+		 * 
+		 * @return list of all threads
+		 * @throws SQLException if a database error occurs
+		 */
+		public List<Thread> loadAllThreads() throws SQLException {
+			List<Thread> threads = new ArrayList<>();
+			String query = "SELECT * FROM threadsDB";
+			try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+				ResultSet rs = pstmt.executeQuery();
+				while (rs.next()) {
+					Thread thread = new Thread(
+						rs.getString("threadId"),
+						rs.getString("title"),
+						rs.getString("description"),
+						rs.getString("createdByUsername")
+					);
+					thread.setCreatedAt(rs.getObject("createdAt", LocalDateTime.class));
+					String statusStr = rs.getString("status");
+					if ("OPEN".equals(statusStr)) {
+						thread.setStatus(Thread.ThreadStatus.OPEN);
+					} else if ("CLOSED".equals(statusStr)) {
+						thread.setStatus(Thread.ThreadStatus.CLOSED);
+					} else {
+						thread.setStatus(Thread.ThreadStatus.OPEN); // Default
+					}
+					threads.add(thread);
+				}
+			}
+			return threads;
+		}
+		
+		/*******
+		 * <p> Method: List<Thread> loadThreadsByStaff(String staffUsername) </p>
+		 * 
+		 * <p> Description: Loads all threads created by a specific staff member.</p>
+		 * 
+		 * @param staffUsername the username of the staff member
+		 * @return list of threads created by the staff member
+		 * @throws SQLException if a database error occurs
+		 */
+		public List<Thread> loadThreadsByStaff(String staffUsername) throws SQLException {
+			List<Thread> threads = new ArrayList<>();
+			String query = "SELECT * FROM threadsDB WHERE createdByUsername = ? ORDER BY createdAt DESC";
+			try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+				pstmt.setString(1, staffUsername);
+				ResultSet rs = pstmt.executeQuery();
+				while (rs.next()) {
+					Thread thread = new Thread(
+						rs.getString("threadId"),
+						rs.getString("title"),
+						rs.getString("description"),
+						rs.getString("createdByUsername")
+					);
+					thread.setCreatedAt(rs.getObject("createdAt", LocalDateTime.class));
+					String statusStr = rs.getString("status");
+					if ("OPEN".equals(statusStr)) {
+						thread.setStatus(Thread.ThreadStatus.OPEN);
+					} else if ("CLOSED".equals(statusStr)) {
+						thread.setStatus(Thread.ThreadStatus.CLOSED);
+					} else {
+						thread.setStatus(Thread.ThreadStatus.OPEN); // Default
+					}
+					threads.add(thread);
+				}
+			}
+			return threads;
+		}
+		
+		/*******
+		 * <p> Method: boolean deleteThread(String threadId) </p>
+		 * 
+		 * <p> Description: Deletes a thread from the database.</p>
+		 * 
+		 * @param threadId the ID of the thread to delete
+		 * @return true if the thread was deleted, false otherwise
+		 * @throws SQLException if a database error occurs
+		 */
+		public boolean deleteThread(String threadId) throws SQLException {
+			String query = "DELETE FROM threadsDB WHERE threadId = ?";
+			try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+				pstmt.setString(1, threadId);
+				int rowsAffected = pstmt.executeUpdate();
+				return rowsAffected > 0;
+			}
+		}
+		
+		/*******
+		 * <p> Method: int getPostCountForThread(String threadTitle) </p>
+		 * 
+		 * <p> Description: Returns the number of posts in a thread (by thread title).</p>
+		 * 
+		 * @param threadTitle the title of the thread
+		 * @return the number of posts in the thread
+		 * @throws SQLException if a database error occurs
+		 */
+		public int getPostCountForThread(String threadTitle) throws SQLException {
+			String query = "SELECT COUNT(*) FROM postsDB WHERE thread = ? AND isDeleted = FALSE";
+			try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+				pstmt.setString(1, threadTitle);
+				ResultSet rs = pstmt.executeQuery();
+				if (rs.next()) {
+					return rs.getInt(1);
+				}
+			}
+			return 0;
+		}
+		
+		/*******
+		 * <p> Method: void saveRequest(Request request) </p>
+		 * 
+		 * <p> Description: Saves a request to the database using MERGE INTO (upsert).</p>
+		 * 
+		 * @param request the Request object to save
+		 * @throws SQLException if a database error occurs
+		 */
+		public void saveRequest(Request request) throws SQLException {
+			String query = "MERGE INTO requestsDB (requestId, title, description, category, status, " +
+			               "createdByUsername, closedByUsername, resolutionNotes, reopenReason, " +
+			               "originalRequestId, createdAt, closedAt, reopenedAt) " +
+			               "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+			try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+				pstmt.setString(1, request.getRequestId());
+				pstmt.setString(2, request.getTitle());
+				pstmt.setString(3, request.getDescription());
+				pstmt.setString(4, request.getCategory() != null ? request.getCategory().toString() : null);
+				pstmt.setString(5, request.getStatus().toString());
+				pstmt.setString(6, request.getCreatedByUsername());
+				pstmt.setString(7, request.getClosedByUsername());
+				pstmt.setString(8, request.getResolutionNotes());
+				pstmt.setString(9, request.getReopenReason());
+				pstmt.setString(10, request.getOriginalRequestId());
+				pstmt.setObject(11, request.getCreatedAt());
+				pstmt.setObject(12, request.getClosedAt());
+				pstmt.setObject(13, request.getReopenedAt());
+				pstmt.executeUpdate();
+			}
+		}
+		
+		/*******
+		 * <p> Method: List<Request> loadAllRequests() </p>
+		 * 
+		 * <p> Description: Loads all requests from the database.</p>
+		 * 
+		 * @return list of all requests
+		 * @throws SQLException if a database error occurs
+		 */
+		public List<Request> loadAllRequests() throws SQLException {
+			List<Request> requests = new ArrayList<>();
+			String query = "SELECT * FROM requestsDB";
+			try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+				ResultSet rs = pstmt.executeQuery();
+				while (rs.next()) {
+					Request request = parseRequestFromResultSet(rs);
+					requests.add(request);
+				}
+			}
+			return requests;
+		}
+		
+		/*******
+		 * <p> Method: List<Request> loadRequestsByStaff(String staffUsername) </p>
+		 * 
+		 * <p> Description: Loads all requests created by a specific staff member.</p>
+		 * 
+		 * @param staffUsername the username of the staff member
+		 * @return list of requests created by the staff member
+		 * @throws SQLException if a database error occurs
+		 */
+		public List<Request> loadRequestsByStaff(String staffUsername) throws SQLException {
+			List<Request> requests = new ArrayList<>();
+			String query = "SELECT * FROM requestsDB WHERE createdByUsername = ? ORDER BY createdAt DESC";
+			try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+				pstmt.setString(1, staffUsername);
+				ResultSet rs = pstmt.executeQuery();
+				while (rs.next()) {
+					Request request = parseRequestFromResultSet(rs);
+					requests.add(request);
+				}
+			}
+			return requests;
+		}
+		
+		/*******
+		 * <p> Method: Request parseRequestFromResultSet(ResultSet rs) </p>
+		 * 
+		 * <p> Description: Helper method to parse a Request object from a ResultSet.</p>
+		 * 
+		 * @param rs the ResultSet to parse from
+		 * @return a Request object
+		 * @throws SQLException if a database error occurs
+		 */
+		private Request parseRequestFromResultSet(ResultSet rs) throws SQLException {
+			// Parse category
+			Request.RequestCategory category = null;
+			try {
+				String categoryStr = rs.getString("category");
+				if (categoryStr != null) {
+					category = Request.RequestCategory.valueOf(categoryStr);
+				}
+			} catch (Exception e) {
+				// Use default if parsing fails
+			}
+			
+			// Parse status
+			Request.RequestStatus status = Request.RequestStatus.OPEN;
+			try {
+				String statusStr = rs.getString("status");
+				if ("CLOSED".equals(statusStr)) {
+					status = Request.RequestStatus.CLOSED;
+				}
+			} catch (Exception e) {
+				// Use default if parsing fails
+			}
+			
+			Request request = new Request(
+				rs.getString("requestId"),
+				rs.getString("title"),
+				rs.getString("description"),
+				category,
+				rs.getString("createdByUsername")
+			);
+			
+			request.setStatus(status);
+			request.setClosedByUsername(rs.getString("closedByUsername"));
+			request.setResolutionNotes(rs.getString("resolutionNotes"));
+			request.setReopenReason(rs.getString("reopenReason"));
+			request.setOriginalRequestId(rs.getString("originalRequestId"));
+			request.setCreatedAt(rs.getObject("createdAt", LocalDateTime.class));
+			request.setClosedAt(rs.getObject("closedAt", LocalDateTime.class));
+			request.setReopenedAt(rs.getObject("reopenedAt", LocalDateTime.class));
+			
+			return request;
+		}
+		
+		/*******
+		 * <p> Method: boolean deleteRequest(String requestId) </p>
+		 * 
+		 * <p> Description: Deletes a request from the database.</p>
+		 * 
+		 * @param requestId the ID of the request to delete
+		 * @return true if the request was deleted, false otherwise
+		 * @throws SQLException if a database error occurs
+		 */
+		public boolean deleteRequest(String requestId) throws SQLException {
+			String query = "DELETE FROM requestsDB WHERE requestId = ?";
+			try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+				pstmt.setString(1, requestId);
+				int rowsAffected = pstmt.executeUpdate();
+				return rowsAffected > 0;
+			}
+		}
+		
 	/*******
 	 * <p> Method: void closeConnection()</p>
 	 * 
