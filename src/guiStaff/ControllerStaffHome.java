@@ -36,6 +36,13 @@ import entityClasses.RequestCollection;
  */
 public class ControllerStaffHome {
 	
+	/*****
+     * <p> Default Constructor </p>
+     */
+    public ControllerStaffHome() {
+        // existing initialization or leave empty
+    }
+	
 	/*-*******************************************************************************************
 
 	User Interface Actions for this page
@@ -865,6 +872,9 @@ public class ControllerStaffHome {
 	 * 
 	 * <p> Description: Helper method to display a list of posts for staff with a Feedback button.</p>
 	 * 
+	 * @param postList List of Posts that will be displayed
+	 * @param replies the replies that will be displayed with the posts
+	 * @param title the title of the alert or dialog
 	 */
 	private static void displayPostListForStaff(List<Post> postList, ReplyCollection replies, String title) {
 		
@@ -957,6 +967,7 @@ public class ControllerStaffHome {
 	 * 
 	 * <p> Description: Displays full post details with replies and feedback for staff.</p>
 	 * 
+	 * @param postId the postId for the post that will be viewed
 	 */
 	private static void viewPostDetailsForStaff(String postId) {
 		// Refresh collections from database to ensure we have the latest data

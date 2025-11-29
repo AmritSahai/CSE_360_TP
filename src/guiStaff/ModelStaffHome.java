@@ -30,6 +30,13 @@ import java.util.List;
 
 public class ModelStaffHome {
 	
+	/*****
+     * <p> Default Constructor </p>
+     */
+    public ModelStaffHome() {
+        // existing initialization or leave empty
+    }
+	
 	// Parameter collection - shared across all staff sessions
 	private static ParameterCollection parameterCollection = new ParameterCollection();
 	// Post and Reply collections - shared across all sessions
